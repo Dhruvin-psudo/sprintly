@@ -13,12 +13,70 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OrgPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum TokenType {
+  REFRESH
+  RESET_PASSWORD
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model Organization {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  name String @db.VarChar(100)
+  slug String @db.VarChar(100)
+  email String? @db.VarChar(255)
+
+  plan OrgPlan @default(FREE)
+  setting Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdBy String? @map("created_by") @db.Uuid
+  updatedBy String? @map("updated_by") @db.Uuid 
+
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String? @map("deleted_by") @db.Uuid
+
+  isDeleted Boolean @default(false) @map("is_deleted")
+
+  // Audit FK relations
+  createdByUser User? @relation("OrganizationCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("OrganizationUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  deletedByUser User? @relation("OrganizationDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+
+
+  // Relations
+  roles Role[]
+  tags Tag[]
+  members OrganizationMember[]
+
+  @@map("organizations")
+}
+
 model User {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  name     String @db.VarChar(255)
+  firstName     String @map("first_name") @db.VarChar(100)
+  lastName    String? @map("last_name") @db.VarChar(100)
   email    String @unique @db.VarChar(255)
-  password String @db.VarChar(255)
+  passwordHash String @map("password_hash") @db.VarChar(255)
+  status UserStatus @default(ACTIVE)
+
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
+  lastActiveOrgId String? @map("last_active_org_id") @db.Uuid
 
   createdBy String? @map("created_by") @db.Uuid
   updatedBy String? @map("updated_by") @db.Uuid
@@ -31,7 +89,119 @@ model User {
 
   isDeleted Boolean @default(false) @map("is_deleted")
 
+
+  // Relations
+  memberships OrganizationMember[] @relation("OrganizationMemberUser")
+  tokens      Token[]
+
+  // Audit FK relations
+  updatedOrganizations Organization[] @relation("OrganizationUpdatedBy")
+  createdOrganizations Organization[] @relation("OrganizationCreatedBy")
+  deletedOrganizations Organization[] @relation("OrganizationDeletedBy")
+  createdTags  Tag[]   @relation("TagCreatedBy")
+  createdOrgMemberships OrganizationMember[] @relation("OrganizationMemberCreatedBy")
+  updatedOrgMemberships OrganizationMember[] @relation("OrganizationMemberUpdatedBy")
+  createdRoles Role[] @relation("RoleCreatedBy")
+  updatedRoles Role[] @relation("RoleUpdatedBy")
+  deletedRoles Role[] @relation("RoleDeletedBy")
+
   @@map("users")
   @@index([email])
   @@index([isDeleted, email])
+}
+
+model Tag {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  organizationId String @map("organization_id") @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  name String @db.VarChar(100)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String? @map("created_by") @db.Uuid
+  
+  color Json @default("{}") @db.JsonB
+
+  // Audit FK relations
+  createdByUser User? @relation("TagCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("tags")
+}
+
+model OrganizationMember {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  organizationId String @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId String @map("user_id") @db.Uuid
+  user   User    @relation("OrganizationMemberUser", fields: [userId], references: [id])
+
+  roleId String @map("role_id") @db.Uuid
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdBy String? @map("created_by") @db.Uuid
+  updatedBy String? @map("updated_by") @db.Uuid
+
+  // Audit FK relations
+  createdByUser User? @relation("OrganizationMemberCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("OrganizationMemberUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+model Role {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  organizationId String? @map("organization_id") @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name String @db.VarChar(100)
+  isSystem Boolean @default(false) @map("is_system")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String? @map("created_by") @db.Uuid
+  
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  updatedBy String? @map("updated_by") @db.Uuid
+
+  isDeleted Boolean @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String? @map("deleted_by") @db.Uuid
+
+  // Relations
+  members OrganizationMember[]
+
+  // Audit FK relations
+  createdByUser User? @relation("RoleCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("RoleUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  deletedByUser User? @relation("RoleDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model Token {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+
+  type TokenType 
+  token String @db.Text
+  familyId String? @map("family_id") @db.Uuid
+  metadata Json @default("{}") @db.JsonB
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  isRevoked Boolean @default(false) @map("is_revoked") 
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tokens")
 }

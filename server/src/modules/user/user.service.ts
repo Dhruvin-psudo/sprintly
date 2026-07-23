@@ -14,8 +14,7 @@ export class UserService {
         private readonly configService: ConfigService
     ) {}
 
-    async create(createUserDto : CreateUserDto): Promise<Omit <User, 'password'>> {
-        console.log(createUserDto)
+    async create(createUserDto : CreateUserDto): Promise<Omit <User, 'passwordHash'>> {
         const isEmailTaken = await this.userRepository.isEmailTaken(createUserDto.email)
 
         // if(isEmailTaken) {
@@ -23,16 +22,26 @@ export class UserService {
         // }
 
         const saltRounds = Number(this.configService.get('BCRYPT_SALT_ROUNDS', 10))
-        const passwordHash = await bcrypt.hash(createUserDto.password, saltRounds)
+        const passwordHash = await bcrypt.hash(createUserDto.passwordHash, saltRounds)
 
         const user = await this.userRepository.create({
-            name: createUserDto.name,
+            firstName: createUserDto.firstName,
+            lastName: createUserDto.lastName ?? '',
             email: createUserDto.email,
-            password: passwordHash
+            passwordHash: passwordHash
         })
 
         this.logger.log({ userId : user.id, email : createUserDto.email}, 'User created')
 
         return user
+    }
+
+    /**
+     * Get User By Email
+     * @param email
+     * @returns
+     */
+    async getByEmail(email: string): Promise<User | null> {
+        return this.userRepository.getByEmail(email);
     }
 }

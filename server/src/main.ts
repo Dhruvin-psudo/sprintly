@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
@@ -14,7 +14,11 @@ async function bootstrap() {
   app.set('query parser', 'extended')
 
   const logger = new Logger('Bootstrap');
-  const configService = app.get(ConfigService)
+  const configService = app.get(ConfigService);
+
+  app.enableShutdownHooks();
+
+  app.set('trust proxy', configService.get<string>('TRUST PROXY', '1'));
 
   const publicAppUrl = configService.getOrThrow<string>('PUBLIC_APP_URL');
   const corsOrigins = publicAppUrl.includes(',')
@@ -31,6 +35,12 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
   });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
   const port = configService.get<number>('PORT', 3000);
 

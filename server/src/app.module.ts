@@ -9,6 +9,8 @@ import { AuthGuard } from './modules/auth/guard/auth.guard';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma';
+import { OrganizationModule } from './organization/organization.module';
+import { RoleModule } from './role/role.module';
 
 @Module({
   imports: [
@@ -56,7 +58,9 @@ import { PrismaModule } from './prisma';
         }),
     UserModule,
     AuthModule,
-    PrismaModule
+    PrismaModule,
+    OrganizationModule,
+    RoleModule,
   ],
   controllers: [AppController],
   providers: [
