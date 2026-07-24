@@ -23,6 +23,7 @@ enum OrgPlan {
 enum TokenType {
   REFRESH
   RESET_PASSWORD
+  ONBOARDING
 }
 
 enum UserStatus {

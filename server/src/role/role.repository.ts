@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma";
-import { SystemRole } from "../common/constants/permissions";
+import { SystemRole } from "../common/constants";
 import { OrganizationMember, Role } from "@prisma/client";
 
 interface CreateMemberData {

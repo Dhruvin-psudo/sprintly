@@ -1,5 +1,7 @@
 export interface IRequestBy {
     userId: string | null;
-    organizationId: string | null;
-    refreshTokenId?: string
+    organizationId?: string | null;
+    roleId?: string | null;
+    refreshTokenId?: string;
+    isCompletedOnboarding?: boolean;
 }

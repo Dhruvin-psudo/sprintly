@@ -38,10 +38,10 @@ export class TokenRepository {
   }
 
   // Find Active Token
-  async findActiveToken(type: TokenType, token: string): Promise<Token | null> {
+  async findActiveToken(type: TokenType[], token: string): Promise<Token | null> {
     return this.prisma.token.findFirst({
       where: {
-        type,
+        type: { in: type },
         token,
         isRevoked: false,
         expiresAt: { gt: new Date() }

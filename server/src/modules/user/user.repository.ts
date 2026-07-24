@@ -47,4 +47,22 @@ export class UserRepository {
             where: { email, isDeleted: false },
         });
     }
+
+    // Get User by Id
+    async findById(id: string): Promise<Omit<User, 'passwordHash'> | null> {
+        return this.prisma.user.findUnique({
+            where: { id, isDeleted: false },
+            omit: {
+                passwordHash: true
+            }
+        });
+    }
+
+    // Update User Last Active Organization
+    async updateLastActiveOrg(userId: string, organizationId: string): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { lastActiveOrgId: organizationId, updatedBy: userId },
+        });
+    }
 }

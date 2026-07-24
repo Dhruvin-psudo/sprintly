@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PERMISSION_CATALOG } from '../../src/common/constants/permissions';
+import { PERMISSION_CATALOG } from '../../src/common/constants';
 
 export async function seedPermissions(prisma: PrismaClient) {
     console.log('Seeding permissions...');

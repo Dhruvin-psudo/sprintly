@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { SystemRole, SYSTEM_ROLE_PERMISSIONS } from '../../src/common/constants/permissions';
+import { SystemRole, SYSTEM_ROLE_PERMISSIONS } from '../../src/common/constants';
 
 export async function seedRoles(prisma: PrismaClient) {
     console.log('Seeding system roles & role permissions...');

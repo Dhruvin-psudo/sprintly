@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TokenRepository } from './token.repository';
-import { TokenService } from './token.service';
+import { PrismaService } from '../prisma';
 
 describe('TokenRepository', () => {
   let repository: TokenRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [TokenRepository, TokenService],
+      providers: [
+        TokenRepository,
+        { provide: PrismaService, useValue: {} },
+      ],
     }).compile();
 
     repository = module.get<TokenRepository>(TokenRepository);

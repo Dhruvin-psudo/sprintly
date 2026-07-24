@@ -44,4 +44,27 @@ export class UserService {
     async getByEmail(email: string): Promise<User | null> {
         return this.userRepository.getByEmail(email);
     }
+
+    /**
+     * Find User By Id
+     * @param id
+     */
+    async findById(id: string): Promise<Omit<User, 'passwordHash'>> {
+        const user = await this.userRepository.findById(id);
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        return user;
+    }
+
+    /**
+     * Update User Last Active Org
+     * @param userId
+     * @param orgId
+     */
+    async updateLastActiveOrg(userId: string, organizationId: string): Promise<void> {
+        return this.userRepository.updateLastActiveOrg(userId, organizationId);
+    }
 }

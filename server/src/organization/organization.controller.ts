@@ -20,8 +20,8 @@ export class OrganizationController {
     @CurrentUser() createdBy: IRequestBy,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const organization = await this.organizationService.create(createOrgDto, createdBy)
+    const {refreshToken, ...result} = await this.organizationService.create(createOrgDto, createdBy);
 
-    return ApiResponse.ok({organization}, 'Organization Creation Successful')
+    return ApiResponse.ok(result, 'Organization Creation Successful');
   }
 }

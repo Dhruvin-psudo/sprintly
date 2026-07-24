@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, Logger, UnauthorizedException } from "@
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { UserService } from "../user/user.service";
 import { loginUserDto } from "./dto/login-user.dto";
-import { User , UserStatus} from "@prisma/client";
+import { TokenType, User , UserStatus} from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { RoleService } from "../../role/role.service";
 import { TokenService } from "../../token/token.service";
@@ -23,44 +23,96 @@ export class AuthService {
         private readonly tokenService: TokenService
     ) { }
 
-    async register(registerUserDto: RegisterUserDto) {
-        const user = await this.userService.create(registerUserDto)
-        this.logger.log({ userId: user.id }, 'User registered')
-        return user
+    async register(registerUserDto: RegisterUserDto): Promise<AuthTokensResponse> {
+        const user = await this.userService.create(registerUserDto);
+        await this.tokenService.revokeAllUserSessions(user.id);
+        const { accessToken, refreshToken } = await this.tokenService.generateOnboardingTokens(user.id);
+
+        this.logger.log({ userId: user.id }, 'User registered with onboarding tokens');
+
+        return { user, accessToken, refreshToken };
     }
 
     /** Login User */
     async login(loginUserDto : loginUserDto) : Promise<AuthTokensResponse> {
-        this.logger.log('User login attempt started')
         const user = await this.userService.getByEmail(loginUserDto.email)
 
         if(!user) {
-            this.logger.log('User not found', loginUserDto.email)
             throw new UnauthorizedException('Invalid credentials');
         }
 
         const isPasswordValid = await bcrypt.compare(loginUserDto.password, user.passwordHash)
 
         if (!isPasswordValid) {
-            this.logger.log('Invalid password', loginUserDto.email)
             throw new UnauthorizedException('Invalid credentials');
         }
 
         if (user.status === UserStatus.SUSPENDED) {
-            this.logger.log('Account is suspended', loginUserDto.email)
             throw new ForbiddenException('Account is suspended');
         }
         if (user.status === UserStatus.INACTIVE) {
-            this.logger.log('Account is inactive', loginUserDto.email)
             throw new ForbiddenException('Account is inactive');
         }
 
-        const { accessToken, refreshToken } = await this.tokenService.generateAuthTokens(user.id);
+        let orgContext: { organizationId: string; roleId: string } | undefined;
+
+        if (user.lastActiveOrgId) {
+            const membership = await this.roleService.getMembershipWithRole(user.id, user.lastActiveOrgId);
+            if (membership) {
+                orgContext = { organizationId: membership.organizationId, roleId: membership.roleId };
+            }
+        }
+
+        if (!orgContext) {
+            const firstMembership = await this.roleService.getFirstMembershipWithRole(user.id);
+            if (firstMembership) {
+                orgContext = { organizationId: firstMembership.organizationId, roleId: firstMembership.roleId };
+            }
+        }
+
+        // Revoke all prior active sessions for this user (Single Active Session)
+        await this.tokenService.revokeAllUserSessions(user.id);
+
+        const { accessToken, refreshToken } = orgContext
+            ? await this.tokenService.generateAuthTokens(user.id, orgContext)
+            : await this.tokenService.generateOnboardingTokens(user.id);
 
         const { passwordHash: _hash, ...userWithoutPassword } = user;
 
-        this.logger.log({ userId: user.id }, 'Login successful');
+        this.logger.log({ userId: user.id }, 'Login successful (Single active session enforced)');
 
         return { user: userWithoutPassword, accessToken, refreshToken };
+    }
+
+    /** Logout User */
+    async logout(refreshTokenId?: string, userId?: string): Promise<void> {
+        if (refreshTokenId) {
+            this.logger.log({ refreshTokenId }, "logout function started with refresh token")
+            await this.tokenService.revokeToken(refreshTokenId);
+            this.logger.log({ refreshTokenId }, "token revoked successfully")
+        } else if (userId) {
+            this.logger.log({ userId }, "logout function started with user id")
+            await this.tokenService.revokeAllUserSessions(userId);
+            this.logger.log({ userId }, "all sessions revoked successfully")
+        }
+        this.logger.log({ userId }, 'Logout successful');
+    }
+
+    /** Refresh Access Token */
+    async refreshAccessToken(refreshJwt: string) : Promise<{ accessToken: string }> {
+        const tokenRecord = await this.tokenService.verifyAndGetToken(refreshJwt, [TokenType.REFRESH, TokenType.ONBOARDING])
+
+        const metadata = tokenRecord.metadata as { organizationId: string; roleId: string };
+
+        const accessToken = this.tokenService.generateAccessToken(
+            tokenRecord.userId,
+            tokenRecord.id,
+            { 
+                organizationId : metadata.organizationId,
+                roleId: metadata.roleId
+            }
+        )
+
+        return {accessToken}
     }
 }
