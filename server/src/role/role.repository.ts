@@ -4,9 +4,9 @@ import { SystemRole } from "../common/constants/permissions";
 import { OrganizationMember, Role } from "@prisma/client";
 
 interface CreateMemberData {
-    userId: string,
-    organizationId: string,
-    roleId: string
+    userId: string;
+    organizationId: string;
+    roleId: string;
 }
 
 export interface MembershipWithRole {
@@ -25,7 +25,6 @@ export class RoleRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async findSystemRoleByName(roleName: SystemRole): Promise<Role | null> {
-        console.log("Find Role by name:", roleName)
         return this.prisma.role.findFirst({
             where: { name: roleName, isSystem: true, organizationId: null, isDeleted: false }
         });
@@ -34,7 +33,7 @@ export class RoleRepository {
     async createMember(
         data: CreateMemberData,
         requestedBy?: string
-    ) : Promise<OrganizationMember> {
+    ): Promise<OrganizationMember> {
         return this.prisma.organizationMember.create({
             data: {
                 userId: data.userId,
@@ -42,7 +41,7 @@ export class RoleRepository {
                 roleId: data.roleId,
                 createdBy: requestedBy
             }
-        })
+        });
     }
 
     // Find Membership By UserId and OrganizationId

@@ -162,6 +162,7 @@ model Role {
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name String @db.VarChar(100)
+  description String? @db.VarChar(255)
   isSystem Boolean @default(false) @map("is_system")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -176,6 +177,7 @@ model Role {
 
   // Relations
   members OrganizationMember[]
+  permissions RolePermission[]
 
   // Audit FK relations
   createdByUser User? @relation("RoleCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -184,6 +186,37 @@ model Role {
 
   @@unique([organizationId, name])
   @@map("roles")
+}
+
+model Permission {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  name String @unique @db.VarChar(100)
+  resource String @db.VarChar(100)
+  action String @db.VarChar(100)
+  description String? @db.VarChar(255)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  roleId String @map("role_id") @db.Uuid
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  permissionId String @map("permission_id") @db.Uuid
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String? @map("created_by") @db.Uuid
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model Token {

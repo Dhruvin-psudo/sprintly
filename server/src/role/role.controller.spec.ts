@@ -8,7 +8,15 @@ describe('RoleController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RoleController],
-      providers: [RoleService],
+      providers: [
+        {
+          provide: RoleService,
+          useValue: {
+            getSystemRole: jest.fn(),
+            assignRole: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     controller = module.get<RoleController>(RoleController);

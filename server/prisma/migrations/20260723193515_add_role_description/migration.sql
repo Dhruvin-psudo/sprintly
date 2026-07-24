@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "roles" ADD COLUMN IF NOT EXISTS "description" VARCHAR(255);

@@ -1,24 +1,23 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { MembershipWithRole, RoleRepository } from './role.repository';
 import { SystemRole } from '../common/constants/permissions';
 import { OrganizationMember, Role } from '@prisma/client';
 
 @Injectable()
 export class RoleService {
-    private readonly logger = new Logger(RoleService.name)
+    private readonly logger = new Logger(RoleService.name);
 
     constructor(
         private readonly roleRepository: RoleRepository
     ) {}
 
-    async getSystemRole(roleName: SystemRole) : Promise<Role> {
-        this.logger.log({roleName}, "Fetching system role")
-        const role = await this.roleRepository.findSystemRoleByName(roleName)
+    async getSystemRole(roleName: SystemRole): Promise<Role> {
+        const role = await this.roleRepository.findSystemRoleByName(roleName);
+
         if (!role) {
-            throw new NotFoundException("Role not found")
+            throw new NotFoundException(`Role '${roleName}' not found in database.`);
         }
-        this.logger.log({role}, "System role found")
-        return role
+        return role;
     }
 
     async createMember(
@@ -26,13 +25,11 @@ export class RoleService {
         organizationId: string,
         roleId: string,
         requestedBy?: string
-    ) : Promise<OrganizationMember> {
-        const member = await this.roleRepository.createMember(
-            { userId, organizationId, roleId},
+    ): Promise<OrganizationMember> {
+        return this.roleRepository.createMember(
+            { userId, organizationId, roleId },
             requestedBy
-        )
-
-        return member
+        );
     }
 
     async assignRole(
@@ -40,11 +37,9 @@ export class RoleService {
         userId: string,
         organizationId: string,
         assignedBy: string
-    ) : Promise<OrganizationMember> {
-        console.log(roleName, userId, organizationId, assignedBy)
+    ): Promise<OrganizationMember> {
         const role = await this.getSystemRole(roleName);
-        console.log("Role:", role)
-        return this.createMember(userId, organizationId, role.id, assignedBy)
+        return this.createMember(userId, organizationId, role.id, assignedBy);
     }
 
     async getMembershipWithRole(

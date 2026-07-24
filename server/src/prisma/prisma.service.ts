@@ -17,4 +17,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         await this.$disconnect()
         this._logger.log('Database connection closed')
     }
+
+    async setTenantContext(orgId?: string | null, userId?: string | null): Promise<void> {
+        if (orgId) {
+            await this.$executeRaw`SELECT set_config('app.current_org_id', ${orgId}, true)`;
+        } else {
+            await this.$executeRaw`SELECT set_config('app.current_org_id', '', true)`;
+        }
+
+        if (userId) {
+            await this.$executeRaw`SELECT set_config('app.current_user_id', ${userId}, true)`;
+        } else {
+            await this.$executeRaw`SELECT set_config('app.current_user_id', '', true)`;
+        }
+    }
 }
