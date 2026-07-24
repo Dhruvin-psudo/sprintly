@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenType } from '@prisma/client';
 import { TokenRepository } from './token.repository'
-import { IAuthenticatedUser } from '../common/interfaces/authenticated-user.interface';
+import { IAuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { randomUUID } from 'crypto';
 
 export interface OrgTokenContext {

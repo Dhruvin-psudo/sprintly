@@ -9,8 +9,8 @@ import { AuthGuard } from './modules/auth/guard/auth.guard';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma';
-import { OrganizationModule } from './organization/organization.module';
-import { RoleModule } from './role/role.module';
+import { OrganizationModule } from                                                  './modules/organization/organization.module';
+import { RoleModule } from './modules/role/role.module';
 
 @Module({
   imports: [

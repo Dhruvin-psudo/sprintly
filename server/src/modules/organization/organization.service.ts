@@ -1,13 +1,13 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { OrganizationRepository } from './organization.repository';
-import { UserService } from '../modules/user/user.service';
+import { UserService } from '../user/user.service';
 import { randomBytes } from 'crypto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { IRequestBy } from '../common/interfaces/requested-user.interface';
+import { IRequestBy } from '../../common/interfaces/requested-user.interface';
 import { CreateOrganizationResult } from './interfaces/organization.interface';
 import { RoleService } from '../role/role.service';
-import { SystemRole } from '../common/constants';
 import { TokenService } from '../token/token.service';
+import { SystemRole } from '../../common/constants';
 
 @Injectable()
 export class OrganizationService {

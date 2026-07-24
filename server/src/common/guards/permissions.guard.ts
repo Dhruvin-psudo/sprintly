@@ -2,13 +2,11 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { Permission } from '../constants';
-import { RoleService } from '../../role/role.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
-        private readonly roleService: RoleService
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {

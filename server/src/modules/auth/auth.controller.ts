@@ -62,7 +62,6 @@ export class AuthContoller {
         @CurrentUser('refreshTokenId') refreshTokenId: string,
         @Res({ passthrough: true }) res: Response
     ) {
-        console.log("Controller started logout")
         await this.authService.logout(refreshTokenId);
 
         res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
@@ -71,8 +70,6 @@ export class AuthContoller {
             sameSite: 'strict',
             path: '/api/auth',
         })
-
-        console.log("finished")
 
         return ApiResponse.ok(null, 'Logout successful');
     }

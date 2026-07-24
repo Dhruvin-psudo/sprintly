@@ -1,9 +1,9 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { ConfigService } from '@nestjs/config';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import type { IRequestBy } from '../common/interfaces/requested-user.interface';
-import { ApiResponse } from '../common/dto/api-response.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { IRequestBy } from '../../common/interfaces/requested-user.interface';
+import { ApiResponse } from '../../common/dto/api-response.dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 
 @Controller('organization')

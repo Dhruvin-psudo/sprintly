@@ -3,7 +3,7 @@ import { OrganizationService } from './organization.service';
 import { OrganizationController } from './organization.controller';
 import { OrganizationRepository } from './organization.repository';
 import { RoleModule } from '../role/role.module';
-import { UserModule } from '../modules/user/user.module';
+import { UserModule } from '../user/user.module';
 import { TokenModule } from '../token/token.module';
 
 @Module({

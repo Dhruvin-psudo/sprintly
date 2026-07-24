@@ -4,8 +4,8 @@ import { UserService } from "../user/user.service";
 import { loginUserDto } from "./dto/login-user.dto";
 import { TokenType, User , UserStatus} from "@prisma/client";
 import * as bcrypt from "bcrypt";
-import { RoleService } from "../../role/role.service";
-import { TokenService } from "../../token/token.service";
+import { RoleService } from "../../modules/role/role.service";
+import { TokenService } from "../../modules/token/token.service";
 
 export interface AuthTokensResponse {
     user: Omit<User, 'passwordHash'>;
