@@ -5,6 +5,21 @@ export enum SystemRole {
     VIEWER = 'VIEWER'
 }
 
+export const SYSTEM_ROLE_NAMES = Object.values(SystemRole);
+export type SystemRoleName = SystemRole;
+
+export const SYSTEM_ROLE_HIERARCHY: Record<SystemRole, number> = {
+    [SystemRole.OWNER]: 100,
+    [SystemRole.ADMIN]: 80,
+    [SystemRole.MEMBER]: 60,
+    [SystemRole.VIEWER]: 40,
+};
+
+/** Derives hierarchy level from role name. Custom roles default to 10. */
+export function getRoleHierarchyLevel(roleName: string): number {
+    return SYSTEM_ROLE_HIERARCHY[roleName as SystemRole] ?? 10;
+}
+
 export enum Permission {
     // Organization permissions
     ORGANIZATION_READ = 'organization:read',
@@ -128,4 +143,4 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRole, Permission[]> = {
         Permission.PROJECT_READ,
         Permission.TASK_READ
     ]
-};
+};

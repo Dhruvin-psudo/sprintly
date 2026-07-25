@@ -11,10 +11,7 @@ describe('RoleController', () => {
       providers: [
         {
           provide: RoleService,
-          useValue: {
-            getSystemRole: jest.fn(),
-            assignRole: jest.fn(),
-          },
+          useValue: {},
         },
       ],
     }).compile();

@@ -18,6 +18,7 @@ export class RegisterUserDto {
     email!: string
 
     @IsString()
-    @MaxLength(255)
+    @MinLength(8)
+    @MaxLength(128)
     passwordHash!: string
 }
