@@ -22,7 +22,7 @@ export class AuthContoller {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            path: '/api/auth',
+            path: '/auth',
             maxAge:
                 this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_DAYS', 7) *
                 24 *
@@ -68,7 +68,7 @@ export class AuthContoller {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            path: '/api/auth',
+            path: '/auth',
         })
 
         return ApiResponse.ok(null, 'Logout successful');
