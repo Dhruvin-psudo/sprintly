@@ -1,11 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma";
 import { CreateOrganizationData } from "./interfaces/organization.interface";
-import { Organization } from "@prisma/client";
+import { Organization, Prisma } from "@prisma/client";
+
+type PrismaLike = Pick<PrismaService, 'organization'> | Prisma.TransactionClient
 
 @Injectable()
 export class OrganizationRepository {
     constructor(private readonly prisma: PrismaService) { }
+
+    private client(tx?: Prisma.TransactionClient): PrismaLike {
+        return tx ?? this.prisma
+    }
 
     async create(data: CreateOrganizationData): Promise<Organization> {
         return this.prisma.organization.create({
@@ -16,7 +22,7 @@ export class OrganizationRepository {
                 createdBy: data.createdBy
             }
         })
-    }
+    };
 
     async isSlugTaken(slug: string): Promise<boolean> {
         const org = await this.prisma.organization.findFirst({
@@ -24,5 +30,21 @@ export class OrganizationRepository {
             select: { id: true }
         })
         return org !== null
+    };
+
+    async findOrgById(orgId: string, tx?: Prisma.TransactionClient) : Promise<Organization | null> {
+        const db = this.client(tx);
+        return db.organization.findUnique({
+            where: { id: orgId , isDeleted: false}
+        })
+    };
+
+    async findOrgsByUserId(userId: string) : Promise<Organization[]> {
+        return this.prisma.organization.findMany({
+            where: {
+                isDeleted: false,
+                members: { some: { userId }}
+            }
+        })
     }
 }

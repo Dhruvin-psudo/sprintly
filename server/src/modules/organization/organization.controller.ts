@@ -1,13 +1,14 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { OrganizationService } from './organization.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AllowOnboarding } from '../../common/decorators/allow-onboarding.decorator';
-import type { IJwtUser } from '../../common/interfaces';
+import type { IJwtUser, IRequestBy } from '../../common/interfaces';
 import { ApiResponse } from '../../common/dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { REFRESH_TOKEN_COOKIE_NAME } from '../../common/constants';
+import { SwitchOrganizationDto } from './dto/switch-organization.dto';
 
 @Controller('organization')
 export class OrganizationController {
@@ -30,7 +31,19 @@ export class OrganizationController {
         60 *
         1000,
     });
-  }
+  };
+
+  @Get()
+  async getOrgById(@CurrentUser('organizationId') orgId: string) {
+    const org = await this.organizationService.findOrgById(orgId);
+    return ApiResponse.ok(org, 'Organization fetched successfully')
+  };
+
+  @Get('all')
+  async getAllOrg(@CurrentUser('userId') userId : string) {
+    const orgs = await this.organizationService.getUserOrganizations(userId);
+    return ApiResponse.ok(orgs, 'All Organizations fetched successfully')
+  } 
 
   @AllowOnboarding()
   @Post()
@@ -46,5 +59,21 @@ export class OrganizationController {
     }
 
     return ApiResponse.ok(result, 'Organization Creation Successful');
+  };
+
+  @Post('switch')
+  async switch(
+    @Body() dto: SwitchOrganizationDto,
+    @CurrentUser() switchedBy: IRequestBy,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken } = await this.organizationService.switchOrganization(
+      dto.organizationId,
+      switchedBy
+    )
+
+    this.setRefreshTokenCookie(res, refreshToken)
+
+    return ApiResponse.ok({ accessToken }, 'Organization switched successfully')
   }
 }

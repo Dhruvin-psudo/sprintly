@@ -3,22 +3,24 @@ import { OrganizationRepository } from './organization.repository';
 import { UserService } from '../user/user.service';
 import { randomBytes } from 'crypto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { IJwtUser } from '../../common/interfaces';
+import { IJwtUser, IRequestBy } from '../../common/interfaces';
 import { CreateOrganizationResult } from './interfaces/organization.interface';
 import { RoleService } from '../role/role.service';
 import { SystemRole } from '../../common/constants';
-import { TokenService } from '../token/token.service';
+import { GeneratedTokens, TokenService } from '../token/token.service';
+import { AuthNoMembershipException, ResourceNotFoundException } from '../../common/errors';
+import { Organization } from '@prisma/client';
 
 @Injectable()
 export class OrganizationService {
     private readonly logger = new Logger(OrganizationService.name)
 
-    constructor (
+    constructor(
         private readonly organizationRepository: OrganizationRepository,
         private readonly userService: UserService,
         private readonly roleService: RoleService,
         private readonly tokenService: TokenService
-    ) {}
+    ) { }
 
     private generateSlug(name: string): string {
         return name
@@ -44,6 +46,21 @@ export class OrganizationService {
         throw new ConflictException(
             'Unable to generate a unique slug. Please try a different name.',
         );
+    };
+
+    // Find Organization By ID
+    async findOrgById(orgId: string) : Promise<Organization | null> {
+        const org = await this.organizationRepository.findOrgById(orgId);
+        if (!org) {
+            throw new ResourceNotFoundException('Organization', orgId)
+        };
+        return org
+    }
+
+    // Find All User Organizations
+    async getUserOrganizations(userId: string) : Promise<Organization[]> {
+        const orgs = await this.organizationRepository.findOrgsByUserId(userId);
+        return orgs
     }
 
     async create(
@@ -80,5 +97,31 @@ export class OrganizationService {
         );
 
         return { organization, accessToken, refreshToken };
+    };
+
+    // switch Organization 
+    async switchOrganization(
+        targetOrgId: string,
+        switchedBy: IRequestBy
+    ): Promise<GeneratedTokens> {
+        const member = await this.roleService.getMembershipWithRole(switchedBy.userId, targetOrgId)
+
+        if (!member) {
+            throw new AuthNoMembershipException()
+        }
+
+        const tokens = await this.tokenService.issueAuthTokens(
+            switchedBy.userId,
+            { organizationId: targetOrgId, roleId: member.roleId }
+        )
+
+        await this.userService.updateLastActiveOrg(switchedBy.userId, targetOrgId);
+
+        this.logger.log(
+            { userId: switchedBy.userId, orgId: targetOrgId },
+            'Organization switched successfully'
+        );
+
+        return tokens
     }
 }
