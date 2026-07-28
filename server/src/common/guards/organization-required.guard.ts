@@ -1,10 +1,10 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { IAuthenticatedUser } from '../interfaces/authenticated-user.interface';
+import { IJwtUser } from '../interfaces';
 
 @Injectable()
 export class OrganizationRequiredGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<{ user?: IAuthenticatedUser }>();
+    const request = context.switchToHttp().getRequest<{ user?: IJwtUser }>();
     const user = request.user;
 
     if (!user || !user.userId) {

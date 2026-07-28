@@ -5,7 +5,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthGuard as PassportAuthGuard } from "@nestjs/passport";
 import type { Request } from 'express'
 import { IS_PUBLIC_KEY } from "../../../common/decorators/public.decorator";
-import { IAuthenticatedUser } from "../../../common/interfaces/authenticated-user.interface";
+import { IJwtUser } from "../../../common/interfaces";
 
 @Injectable()
 export class AuthGuard extends PassportAuthGuard('jwt'){
@@ -32,7 +32,7 @@ export class AuthGuard extends PassportAuthGuard('jwt'){
         return (await super.canActivate(context)) as boolean
     }
 
-    handleRequest<T = IAuthenticatedUser>(err: Error | null, user: T | false): T {
+    handleRequest<T = IJwtUser>(err: Error | null, user: T | false): T {
         if(err) {
             if(err instanceof TokenExpiredError) {
                 this.logger.warn('Authentication failed: token expired')

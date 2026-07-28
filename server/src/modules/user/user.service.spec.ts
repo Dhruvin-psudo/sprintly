@@ -79,7 +79,7 @@ describe('UserService', () => {
 
     it('should throw error if user is not found', async () => {
       userRepository.findById.mockResolvedValue(null);
-      await expect(service.findById('invalid-id')).rejects.toThrow('User not found');
+      await expect(service.findById('invalid-id')).rejects.toThrow('User with id invalid-id not found');
     });
   });
 
@@ -103,7 +103,7 @@ describe('UserService', () => {
 
     it('should throw error if user is not found', async () => {
       userRepository.getWithMembership.mockResolvedValue(null);
-      await expect(service.getMe('invalid-id', 'org-1')).rejects.toThrow('User not found');
+      await expect(service.getMe('invalid-id', 'org-1')).rejects.toThrow('User with id invalid-id not found');
     });
   });
 
@@ -137,7 +137,7 @@ describe('UserService', () => {
           currentPassword: 'wrongOldPass',
           newPassword: 'newPass123',
         })
-      ).rejects.toThrow('Invalid credentials');
+      ).rejects.toThrow('Invalid email or password');
     });
   });
 

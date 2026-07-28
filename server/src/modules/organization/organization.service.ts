@@ -3,10 +3,9 @@ import { OrganizationRepository } from './organization.repository';
 import { UserService } from '../user/user.service';
 import { randomBytes } from 'crypto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { IRequestBy } from '../../common/interfaces/requested-user.interface';
+import { IJwtUser } from '../../common/interfaces';
 import { CreateOrganizationResult } from './interfaces/organization.interface';
 import { RoleService } from '../role/role.service';
-import { TokenService } from '../token/token.service';
 import { SystemRole } from '../../common/constants';
 
 @Injectable()
@@ -17,7 +16,6 @@ export class OrganizationService {
         private readonly organizationRepository: OrganizationRepository,
         private readonly userService: UserService,
         private readonly roleService: RoleService,
-        private readonly tokenService: TokenService,
     ) {}
 
     private generateSlug(name: string): string {
@@ -48,7 +46,7 @@ export class OrganizationService {
 
     async create(
         dto: CreateOrganizationDto,
-        createdBy: IRequestBy
+        createdBy: IJwtUser
     ): Promise<CreateOrganizationResult> {
         const slug = await this.generateUniqueSlug(dto.name);
 
@@ -56,30 +54,24 @@ export class OrganizationService {
             name: dto.name,
             email: dto.email,
             slug,
-            createdBy: createdBy.userId!
+            createdBy: createdBy.userId
         });
 
-        const member = await this.roleService.assignRole(
+        await this.roleService.assignRole(
             SystemRole.OWNER,
-            createdBy.userId!,
+            createdBy.userId,
             organization.id,
-            createdBy.userId!
+            createdBy.userId
         );
 
         // Update user's last active organization ID
-        await this.userService.updateLastActiveOrg(createdBy.userId!, organization.id);
-
-        // Issue upgraded Stage 2 Auth Tokens (with organizationId & roleId)
-        const { accessToken, refreshToken } = await this.tokenService.issueAuthTokens(
-            createdBy.userId!,
-            { organizationId: organization.id, roleId: member.roleId }
-        );
+        await this.userService.updateLastActiveOrg(createdBy.userId, organization.id);
 
         this.logger.log(
-            { orgId: organization.id, slug, userId: createdBy.userId! },
-            'Organization created and upgraded session tokens issued'
+            { orgId: organization.id, slug, userId: createdBy.userId },
+            'Organization created successfully'
         );
 
-        return { organization, accessToken, refreshToken };
+        return { organization };
     }
 }

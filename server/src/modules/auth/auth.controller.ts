@@ -4,7 +4,7 @@ import { Public } from "../../common/decorators/public.decorator";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { AuthService } from "./auth.service";
 import type { Request, Response } from "express"
-import { ApiResponse } from "../../common/dto/api-response.dto";
+import { ApiResponse } from "../../common/dto";
 import { loginUserDto } from "./dto/login-user.dto";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { REFRESH_TOKEN_COOKIE_NAME } from "../../common/constants";

@@ -1,6 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma";
-import { Prisma, User } from '@prisma/client'
+import { Prisma, User, UserStatus } from '@prisma/client';
+import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SEARCH_MODE, SystemRole } from "../../common/constants";
+
+interface FindByOrganizationQuery {
+    search?: string;
+    status?: UserStatus;
+    page: number;
+    limit: number;
+    sortBy?: string;
+    sortOrder?: string;
+    populate?: string[];
+    callerRoleId?: string;
+}
 
 interface CreateUserData {
     firstName: string;
@@ -71,21 +83,21 @@ export class UserRepository {
             where: {
                 id: userId,
                 isDeleted: false,
-            }, 
-            omit: { passwordHash: true,},
+            },
+            omit: { passwordHash: true, },
             include: {
-            memberships: {
-                where: { organizationId },
-                take: 1,
-                include: {
-                role: {
-                    select: {
-                    id: true,
-                    name: true,
+                memberships: {
+                    where: { organizationId },
+                    take: 1,
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
-                },
-            },
             },
         });
 
@@ -97,7 +109,7 @@ export class UserRepository {
             ...rest,
             currentRole: memberships[0]?.role ?? null,
         };
-        }
+    }
 
     // update user
     async update(userId: string, data: Prisma.UserUpdateInput): Promise<Omit<User, 'passwordHash'>> {
@@ -111,10 +123,10 @@ export class UserRepository {
     }
 
     // Delete User 
-    async softDelete(id: string) : Promise<void> {
+    async softDelete(id: string): Promise<void> {
         await this.prisma.user.update({
             where: { id: id },
-            data: { isDeleted: true , deletedAt: new Date()},
+            data: { isDeleted: true, deletedAt: new Date() },
         });
     }
 
@@ -132,5 +144,73 @@ export class UserRepository {
             where: { id: userId },
             data: { lastLoginAt: lastLoginAt },
         });
+    }
+
+    // Get All Users of Organization by Organization Id
+    async findByOrganization(
+        organizationId: string,
+        query: FindByOrganizationQuery
+    ): Promise<{ data: Omit<User, 'passwordHash'>[]; total: number }> {
+        // Owner can see all members, but everyone can not see OWNER-role users.
+        const isCallerOwner = query.callerRoleId
+            ? !!(await this.prisma.role.findFirst({
+                where: { id: query.callerRoleId, name: SystemRole.OWNER, isSystem: true },
+                select: { id: true },
+            }))
+            : false;
+
+        const where: Prisma.UserWhereInput = {
+            isDeleted: false,
+            memberships: {
+                some: {
+                    organizationId,
+                    ...(isCallerOwner
+                        ? {}
+                        : {
+                            role: { NOT: { name: SystemRole.OWNER, isSystem: true } }
+                        }
+                    )
+                }
+            }
+        }
+
+        if (query.status) {
+            where.status = query.status
+        }
+
+        if (query.search) {
+            where.OR = [
+                { firstName: { contains: query.search, mode: SEARCH_MODE } },
+                { lastName: { contains: query.search, mode: SEARCH_MODE } },
+                { email: { contains: query.search, mode: SEARCH_MODE } },
+            ]
+        };
+
+        const orderBy = {
+            [query.sortBy || DEFAULT_SORT_FIELD]: query.sortOrder || DEFAULT_SORT_ORDER,
+        };
+
+        const include = query.populate?.includes('memberships')
+            ? {
+                memberships: {
+                    where: { organizationId },
+                    include: { role: { select: { id: true, name: true } } },
+                }
+            }
+            : undefined;
+
+        const [data, total] = await Promise.all([
+            this.prisma.user.findMany({
+                where,
+                orderBy,
+                skip: (query.page - 1) * query.limit,
+                take: query.limit,
+                omit: { passwordHash: true },
+                include,
+            }),
+            this.prisma.user.count({ where })
+        ])
+
+        return { data, total };
     }
 }

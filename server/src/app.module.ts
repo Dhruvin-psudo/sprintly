@@ -9,13 +9,17 @@ import { AuthGuard } from './modules/auth/guard/auth.guard';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma';
-import { OrganizationModule } from                                                  './modules/organization/organization.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import { RoleModule } from './modules/role/role.module';
+import { PermissionsGuard } from './common/guards/permissions.guard';
+import { PermissionModule } from './modules/permission/permission.module';
+import type { Request } from 'express';
+import { IJwtUser } from './common/interfaces';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    LoggerModule.forRootAsync({
+    imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
                 const isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -26,15 +30,14 @@ import { RoleModule } from './modules/role/role.module';
                             ? undefined
                             : { target: 'pino-pretty', options: { colorize: true } },
                         autoLogging: true,
-                        // customProps: (req: IncomingMessage) => {
-                        //     const expressReq = req as unknown as Request;
-                        //     const user = expressReq.user as IAuthenticatedUser | undefined;
-                        //     return {
-                        //         userId: user?.userId ?? 'anonymous',
-                        //         orgId: user?.organizationId ?? '-',
-                        //         apiKeyId: user?.apiKeyId ?? '-',
-                        //     };
-                        // },
+                        customProps: (req: IncomingMessage) => {
+                            const expressReq = req as unknown as Request;
+                            const user = expressReq.user as IJwtUser | undefined;
+                            return {
+                                userId: user?.userId ?? 'anonymous',
+                                orgId: user?.organizationId ?? '-'
+                            };
+                        },
                         customSuccessMessage: (req: IncomingMessage, res: ServerResponse) => {
                             return `${req.method} ${req.url} ${String(res.statusCode)}`;
                         },
@@ -56,19 +59,24 @@ import { RoleModule } from './modules/role/role.module';
                 };
             },
         }),
-    UserModule,
-    AuthModule,
-    PrismaModule,
-    OrganizationModule,
-    RoleModule,
-  ],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-  ],
+        UserModule,
+        AuthModule,
+        PrismaModule,
+        OrganizationModule,
+        RoleModule,
+        PermissionModule,
+    ],
+    controllers: [AppController],
+    providers: [
+        AppService,
+        {
+            provide: APP_GUARD,
+            useClass: AuthGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: PermissionsGuard
+        }
+    ],
 })
-export class AppModule {}
+export class AppModule { }

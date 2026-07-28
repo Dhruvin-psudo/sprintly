@@ -4,6 +4,7 @@ import { UserService } from '../user/user.service';
 import { RoleService } from '../role/role.service';
 import { TokenService } from '../token/token.service';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { AuthInvalidCredentialsException } from '../../common/errors';
 import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -22,6 +23,8 @@ describe('AuthService', () => {
           useValue: {
             create: jest.fn(),
             getByEmail: jest.fn(),
+            updateLastLoginAt: jest.fn().mockResolvedValue(undefined),
+            updateLastActiveOrg: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -40,6 +43,7 @@ describe('AuthService', () => {
             revokeToken: jest.fn(),
             verifyAndGetToken: jest.fn(),
             generateAccessToken: jest.fn(),
+            generateOnboardingAccessToken: jest.fn(),
           },
         },
       ],
@@ -99,24 +103,24 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if user is not found', async () => {
       userService.getByEmail.mockResolvedValue(null);
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
     it('should throw UnauthorizedException if password does not match', async () => {
       userService.getByEmail.mockResolvedValue(mockUser);
       await expect(service.login({ ...loginDto, password: 'wrongpassword' })).rejects.toThrow(
-        UnauthorizedException
+        AuthInvalidCredentialsException
       );
     });
 
     it('should throw ForbiddenException if account is SUSPENDED', async () => {
       userService.getByEmail.mockResolvedValue({ ...mockUser, status: UserStatus.SUSPENDED });
-      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
     it('should throw ForbiddenException if account is INACTIVE', async () => {
       userService.getByEmail.mockResolvedValue({ ...mockUser, status: UserStatus.INACTIVE });
-      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
     it('should login successfully with org context and generate auth tokens', async () => {
@@ -154,10 +158,11 @@ describe('AuthService', () => {
   });
 
   describe('refreshAccessToken', () => {
-    it('should verify refresh token and generate new access token', async () => {
+    it('should verify REFRESH token and generate new access token', async () => {
       tokenService.verifyAndGetToken.mockResolvedValue({
         id: 'token-1',
         userId: 'u-1',
+        type: 'REFRESH',
         metadata: { organizationId: 'org-1', roleId: 'role-1' },
       } as any);
       tokenService.generateAccessToken.mockReturnValue('new-access-token');
@@ -168,7 +173,22 @@ describe('AuthService', () => {
         'REFRESH',
         'ONBOARDING',
       ]);
+      expect(tokenService.generateAccessToken).toHaveBeenCalledWith('u-1', 'token-1', 'org-1', 'role-1');
       expect(result).toEqual({ accessToken: 'new-access-token' });
+    });
+
+    it('should verify ONBOARDING token and generate new onboarding access token', async () => {
+      tokenService.verifyAndGetToken.mockResolvedValue({
+        id: 'token-2',
+        userId: 'u-1',
+        type: 'ONBOARDING',
+      } as any);
+      tokenService.generateOnboardingAccessToken.mockReturnValue('new-onboarding-access-token');
+
+      const result = await service.refreshAccessToken('valid-jwt');
+
+      expect(tokenService.generateOnboardingAccessToken).toHaveBeenCalledWith('u-1', 'token-2');
+      expect(result).toEqual({ accessToken: 'new-onboarding-access-token' });
     });
   });
 });

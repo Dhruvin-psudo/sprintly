@@ -1,8 +1,11 @@
-import { Body, Controller, Delete, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
-import { ApiResponse } from '../../common/dto/api-response.dto';
+import { ApiResponse } from '../../common/dto';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { Permission } from '../../common/constants';
+import { UserQueryDto } from './dto/user-query.dto';
 
 @Controller('user')
 export class UserController {
@@ -15,6 +18,21 @@ export class UserController {
   ) {
     const user = await this.userService.getMe(userId, organizationId);
     return ApiResponse.ok(user, 'User fetched successfully');
+  }
+
+  @Get('all')
+  @RequirePermissions(Permission.MEMBER_READ)
+  async getAll(
+    @Query() query: UserQueryDto,
+    @CurrentUser('organizationId') organizationId: string,
+    @CurrentUser('roleId') callerId: string
+  ) {
+    const result = await this.userService.getOrganizationUsers(
+      organizationId,
+      callerId,
+      query
+    );
+    return ApiResponse.paginated(result.data, result.meta, 'Users fetched successfully')
   }
 
   @Patch('password')

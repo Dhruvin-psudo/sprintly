@@ -1,4 +1,4 @@
-import { Organization, User } from "@prisma/client";
+import { Organization } from "@prisma/client";
 
 export interface CreateOrganizationData {
     name: string;
@@ -8,8 +8,5 @@ export interface CreateOrganizationData {
 }
 
 export interface CreateOrganizationResult {
-    user?: Omit<User, 'passwordHash'>;
     organization: Organization;
-    accessToken?: string;
-    refreshToken?: string;
 }

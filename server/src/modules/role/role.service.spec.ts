@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoleService } from './role.service';
 import { RoleRepository } from './role.repository';
 import { SystemRole } from '../../common/constants';
-import { NotFoundException } from '@nestjs/common';
+import { RoleNotFoundException } from '../../common/errors';
 
 describe('RoleService', () => {
   let service: RoleService;
@@ -47,7 +47,7 @@ describe('RoleService', () => {
       roleRepository.findSystemRoleByName.mockResolvedValue(null);
 
       await expect(service.getSystemRole(SystemRole.OWNER)).rejects.toThrow(
-        NotFoundException
+        RoleNotFoundException
       );
     });
   });

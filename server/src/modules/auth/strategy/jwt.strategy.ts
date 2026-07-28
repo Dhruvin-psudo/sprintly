@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
-import { IAuthenticatedUser } from "../../../common/interfaces/authenticated-user.interface";
+import { IJwtUser } from "../../../common/interfaces";
 import { TokenService } from "../../../modules/token/token.service";
+import { AuthInvalidCredentialsException, AuthTokenInvalidException } from "../../../common/errors";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,26 +19,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         })
     }
 
-    async validate(payload: IAuthenticatedUser) : Promise<IAuthenticatedUser> {
+    async validate(payload: IJwtUser) : Promise<IJwtUser> {
         if (
             !payload.userId ||
             !payload.refreshTokenId
         ) {
-            throw new UnauthorizedException();
+            throw new AuthInvalidCredentialsException()
         }
 
         // Check DB to verify session has not been revoked
         const isRevoked = await this.tokenService.isTokenRevoked(payload.refreshTokenId);
         if (isRevoked) {
-            throw new UnauthorizedException('Session has been revoked');
+            throw new AuthTokenInvalidException()
         }
         
+        if (payload.organizationId && payload.roleId) {
+            return {
+                userId: payload.userId,
+                refreshTokenId: payload.refreshTokenId,
+                organizationId: payload.organizationId,
+                roleId: payload.roleId,
+                isCompletedOnboarding: true
+            };
+        }
+
         return {
             userId: payload.userId,
-            organizationId: payload.organizationId ?? null,
-            roleId: payload.roleId ?? null,
             refreshTokenId: payload.refreshTokenId,
-            isCompletedOnboarding: payload.isCompletedOnboarding ?? Boolean(payload.organizationId)
+            organizationId: null,
+            roleId: null,
+            isCompletedOnboarding: false
         };
     }
 }

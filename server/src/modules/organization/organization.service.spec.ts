@@ -3,7 +3,6 @@ import { OrganizationService } from './organization.service';
 import { OrganizationRepository } from './organization.repository';
 import { UserService } from '../user/user.service';
 import { RoleService } from '../role/role.service';
-import { TokenService } from '../token/token.service';
 import { SystemRole } from '../../common/constants';
 import { ConflictException } from '@nestjs/common';
 
@@ -12,7 +11,6 @@ describe('OrganizationService', () => {
   let organizationRepository: jest.Mocked<OrganizationRepository>;
   let userService: jest.Mocked<UserService>;
   let roleService: jest.Mocked<RoleService>;
-  let tokenService: jest.Mocked<TokenService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -37,12 +35,6 @@ describe('OrganizationService', () => {
             assignRole: jest.fn(),
           },
         },
-        {
-          provide: TokenService,
-          useValue: {
-            issueAuthTokens: jest.fn(),
-          },
-        },
       ],
     }).compile();
 
@@ -50,7 +42,6 @@ describe('OrganizationService', () => {
     organizationRepository = module.get(OrganizationRepository);
     userService = module.get(UserService);
     roleService = module.get(RoleService);
-    tokenService = module.get(TokenService);
   });
 
   it('should be defined', () => {
@@ -58,7 +49,7 @@ describe('OrganizationService', () => {
   });
 
   describe('create', () => {
-    it('should generate a unique slug, create organization, assign owner role, and return tokens', async () => {
+    it('should generate a unique slug, create organization, and assign owner role', async () => {
       const dto = { name: 'Acme Corp', email: 'info@acme.com' };
       const createdBy = { userId: 'u-100' } as any;
       const createdOrg = { id: 'org-1', name: 'Acme Corp', slug: 'acme-corp' } as any;
@@ -67,10 +58,6 @@ describe('OrganizationService', () => {
       organizationRepository.isSlugTaken.mockResolvedValue(false);
       organizationRepository.create.mockResolvedValue(createdOrg);
       roleService.assignRole.mockResolvedValue(assignedMember);
-      tokenService.issueAuthTokens.mockResolvedValue({
-        accessToken: 'access-token-123',
-        refreshToken: 'refresh-token-123',
-      });
 
       const result = await service.create(dto, createdBy);
 
@@ -88,14 +75,8 @@ describe('OrganizationService', () => {
         'u-100'
       );
       expect(userService.updateLastActiveOrg).toHaveBeenCalledWith('u-100', 'org-1');
-      expect(tokenService.issueAuthTokens).toHaveBeenCalledWith('u-100', {
-        organizationId: 'org-1',
-        roleId: 'role-owner',
-      });
       expect(result).toEqual({
         organization: createdOrg,
-        accessToken: 'access-token-123',
-        refreshToken: 'refresh-token-123',
       });
     });
 

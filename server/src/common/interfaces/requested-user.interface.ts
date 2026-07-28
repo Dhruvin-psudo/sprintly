@@ -1,7 +1,3 @@
-export interface IRequestBy {
-    userId: string | null;
-    organizationId?: string | null;
-    roleId?: string | null;
-    refreshTokenId?: string;
-    isCompletedOnboarding?: boolean;
-}
+import { IAuthenticatedUser } from './authenticated-user.interface';
+
+export type IRequestBy = IAuthenticatedUser;

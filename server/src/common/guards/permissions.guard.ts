@@ -1,12 +1,18 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { Permission } from '../constants';
+import { RoleRepository } from '../../modules/role/role.repository';
+import { IJwtUser } from '../interfaces';
+import { formatPermission } from '../constants/permissions';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
+    private readonly logger = new Logger(PermissionsGuard.name);
+
     constructor(
         private readonly reflector: Reflector,
+        private readonly roleRepository: RoleRepository
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -19,30 +25,55 @@ export class PermissionsGuard implements CanActivate {
             return true;
         }
 
-        const request = context.switchToHttp().getRequest();
+        const request = context.switchToHttp().getRequest<{ user?: IJwtUser; path?: string}>();
         const user = request.user;
 
-        if (!user || (!user.userId && !user.id)) {
+        if (!user || !user.organizationId || !user.roleId) {
             throw new ForbiddenException('User is not authenticated');
         }
 
-        const userId = user.userId || user.id;
-        const organizationId = 
-            request.params?.organizationId || 
-            request.params?.orgId || 
-            request.headers['x-organization-id'] || 
-            user.organizationId;
+        let userPermissions: Set<string>;
 
-        if (!organizationId) {
-            // If endpoint requires specific organization-scoped permissions but org context is missing
-            throw new ForbiddenException('Organization context missing for permission check');
-        }
+        const role = await this.roleRepository.findRoleWithPermissions(
+            user.roleId as string, 
+            user.organizationId as string
+        );
 
-        // const hasPermission = await this.roleService.hasPermission(userId, organizationId, requiredPermissions);
+        if(!role) {
+            this.logger.warn(
+                {roleId: user.roleId, organizationId: user.organizationId},
+                'Role was not found during permission check'
+            )
+            throw new ForbiddenException('Role not found')
+        };
+
+        const perms = role.rolePermissions.map((rp) => 
+            formatPermission(rp.permission.resource, rp.permission.action)
+        );
+        userPermissions = new Set(perms);
+
+        const hasPermission = requiredPermissions.every((permission)=>userPermissions.has(permission));
         
-        // if (!hasPermission) {
-        //     throw new ForbiddenException('Forbidden: Insufficient permissions');
-        // }
+        if (!hasPermission) {
+            this.logger.warn(
+                {
+                    userId: user.userId,
+                    orgId: user.organizationId,
+                    required: requiredPermissions
+                },
+                'Permission denied'
+            )
+            throw new ForbiddenException('Insufficient permissions');
+        };
+
+        this.logger.debug(
+            {
+                userId: user.userId,
+                organizationId: user.organizationId,
+                required: requiredPermissions
+            },
+            'Permission granted'
+        )
 
         return true;
     }

@@ -109,9 +109,13 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     { name: Permission.API_KEY_MANAGE, resource: 'apikey', action: 'manage', description: 'Manage API keys' }
 ];
 
-const ALL_PERMISSIONS = Object.values(Permission);
+export function formatPermission(resource: string, action: string) : string {
+    return `${resource}:${action}`
+}
 
-export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRole, Permission[]> = {
+const ALL_PERMISSIONS: readonly Permission[] = Object.values(Permission);
+
+export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRole, readonly Permission[]> = {
     [SystemRole.OWNER]: ALL_PERMISSIONS,
 
     [SystemRole.ADMIN]: ALL_PERMISSIONS.filter(p => 

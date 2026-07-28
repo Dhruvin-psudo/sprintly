@@ -178,7 +178,7 @@ model Role {
 
   // Relations
   members OrganizationMember[]
-  permissions RolePermission[]
+  rolePermissions RolePermission[]
 
   // Audit FK relations
   createdByUser User? @relation("RoleCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -198,8 +198,9 @@ model Permission {
   description String? @db.VarChar(255)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  roles RolePermission[]
+  rolePermissions RolePermission[]
 
   @@map("permissions")
 }

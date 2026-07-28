@@ -51,10 +51,7 @@ describe('TokenService', () => {
 
   describe('generateAccessToken', () => {
     it('should sign jwt with authenticated user payload', () => {
-      const token = service.generateAccessToken('u-1', 'rf-1', {
-        organizationId: 'org-1',
-        roleId: 'role-1',
-      });
+      const token = service.generateAccessToken('u-1', 'rf-1', 'org-1', 'role-1');
 
       expect(jwtService.sign).toHaveBeenCalledWith({
         userId: 'u-1',
@@ -62,6 +59,21 @@ describe('TokenService', () => {
         organizationId: 'org-1',
         roleId: 'role-1',
         isCompletedOnboarding: true,
+      });
+      expect(token).toBe('mock-jwt-string');
+    });
+  });
+
+  describe('generateOnboardingAccessToken', () => {
+    it('should sign jwt with onboarding user payload', () => {
+      const token = service.generateOnboardingAccessToken('u-1', 'rf-1');
+
+      expect(jwtService.sign).toHaveBeenCalledWith({
+        userId: 'u-1',
+        refreshTokenId: 'rf-1',
+        organizationId: null,
+        roleId: null,
+        isCompletedOnboarding: false,
       });
       expect(token).toBe('mock-jwt-string');
     });
@@ -79,7 +91,33 @@ describe('TokenService', () => {
         roleId: 'role-1',
       });
 
-      expect(tokenRepository.createToken).toHaveBeenCalled();
+      expect(tokenRepository.createToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: TokenType.REFRESH,
+          metadata: { organizationId: 'org-1', roleId: 'role-1' },
+        })
+      );
+      expect(result).toEqual({
+        accessToken: 'mock-jwt-string',
+        refreshToken: 'mock-jwt-string',
+      });
+    });
+  });
+
+  describe('generateOnboardingTokens', () => {
+    it('should generate onboarding tokens and create an onboarding token in DB', async () => {
+      tokenRepository.createToken.mockResolvedValue({
+        id: 'token-row-2',
+        userId: 'u-1',
+      } as any);
+
+      const result = await service.generateOnboardingTokens('u-1');
+
+      expect(tokenRepository.createToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: TokenType.ONBOARDING,
+        })
+      );
       expect(result).toEqual({
         accessToken: 'mock-jwt-string',
         refreshToken: 'mock-jwt-string',
@@ -131,7 +169,7 @@ describe('TokenService', () => {
 
       await expect(
         service.verifyAndGetToken('invalid-jwt', [TokenType.REFRESH])
-      ).rejects.toThrow('Token not found');
+      ).rejects.toThrow('Password reset token is invalid or expired');
     });
   });
 
