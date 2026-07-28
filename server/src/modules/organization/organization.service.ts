@@ -7,6 +7,7 @@ import { IJwtUser } from '../../common/interfaces';
 import { CreateOrganizationResult } from './interfaces/organization.interface';
 import { RoleService } from '../role/role.service';
 import { SystemRole } from '../../common/constants';
+import { TokenService } from '../token/token.service';
 
 @Injectable()
 export class OrganizationService {
@@ -16,6 +17,7 @@ export class OrganizationService {
         private readonly organizationRepository: OrganizationRepository,
         private readonly userService: UserService,
         private readonly roleService: RoleService,
+        private readonly tokenService: TokenService
     ) {}
 
     private generateSlug(name: string): string {
@@ -57,7 +59,7 @@ export class OrganizationService {
             createdBy: createdBy.userId
         });
 
-        await this.roleService.assignRole(
+        const member = await this.roleService.assignRole(
             SystemRole.OWNER,
             createdBy.userId,
             organization.id,
@@ -67,11 +69,16 @@ export class OrganizationService {
         // Update user's last active organization ID
         await this.userService.updateLastActiveOrg(createdBy.userId, organization.id);
 
-        this.logger.log(
-            { orgId: organization.id, slug, userId: createdBy.userId },
-            'Organization created successfully'
+        const { accessToken, refreshToken } = await this.tokenService.issueAuthTokens(
+            createdBy.userId,
+            { organizationId: organization.id, roleId: member.roleId }
         );
 
-        return { organization };
+        this.logger.log(
+            { orgId: organization.id, slug, userId: createdBy.userId },
+            'Organization created successfully and full auth tokens issued'
+        );
+
+        return { organization, accessToken, refreshToken };
     }
 }

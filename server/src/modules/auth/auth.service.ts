@@ -6,7 +6,7 @@ import { TokenType, User , UserStatus} from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { RoleService } from "../../modules/role/role.service";
 import { TokenService } from "../../modules/token/token.service";
-import { AuthInvalidCredentialsException, AuthNoMembershipException } from "../../common/errors";
+import { AuthInvalidCredentialsException } from "../../common/errors";
 
 export interface AuthTokensResponse {
     user: Omit<User, 'passwordHash'>;
@@ -67,14 +67,6 @@ export class AuthService {
             ? await this.roleService.getMembershipWithRole(user.id, user.lastActiveOrgId)
             : await this.roleService.getFirstMembershipWithRole(user.id);
 
-        if(!membership) {
-            throw new AuthNoMembershipException()
-        }
-
-        if (user.lastActiveOrgId !== membership.organizationId) {
-            await this.userService.updateLastActiveOrg(user.id, membership.organizationId);
-        }
-        
         // Revoke all prior active sessions for this user (Single Active Session)
         await this.tokenService.revokeAllUserSessions(user.id);
 
@@ -85,14 +77,24 @@ export class AuthService {
             );
         });
 
+        const { passwordHash: _hash, ...userWithoutPassword } = user;
+
+        if (!membership) {
+            this.logger.log({ userId: user.id }, 'Login successful without membership (Issued onboarding tokens)');
+            const { accessToken, refreshToken } = await this.tokenService.generateOnboardingTokens(user.id);
+            return { user: userWithoutPassword, accessToken, refreshToken };
+        }
+
+        if (user.lastActiveOrgId !== membership.organizationId) {
+            await this.userService.updateLastActiveOrg(user.id, membership.organizationId);
+        }
+
         const { accessToken, refreshToken } = await this.tokenService.generateAuthTokens(user.id, {
             organizationId: membership.organizationId,
             roleId: membership.roleId
-        })
+        });
 
-        const { passwordHash: _hash, ...userWithoutPassword } = user;
-
-        this.logger.log({ userId: user.id }, 'Login successful (Single active session enforced)');
+        this.logger.log({ userId: user.id }, 'Login successful with org membership');
 
         return { user: userWithoutPassword, accessToken, refreshToken };
     }

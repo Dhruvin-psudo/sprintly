@@ -5,6 +5,7 @@ import { Permission } from '../constants';
 import { RoleRepository } from '../../modules/role/role.repository';
 import { IJwtUser } from '../interfaces';
 import { formatPermission } from '../constants/permissions';
+import { AuthNoMembershipException } from '../errors';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -29,7 +30,7 @@ export class PermissionsGuard implements CanActivate {
         const user = request.user;
 
         if (!user || !user.organizationId || !user.roleId) {
-            throw new ForbiddenException('User is not authenticated');
+            throw new AuthNoMembershipException();
         }
 
         let userPermissions: Set<string>;

@@ -6,12 +6,13 @@ import { AppService } from './app.service';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './modules/auth/guard/auth.guard';
+import { OrganizationRequiredGuard } from './common/guards/organization-required.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { RoleModule } from './modules/role/role.module';
-import { PermissionsGuard } from './common/guards/permissions.guard';
 import { PermissionModule } from './modules/permission/permission.module';
 import type { Request } from 'express';
 import { IJwtUser } from './common/interfaces';
@@ -75,8 +76,12 @@ import { IJwtUser } from './common/interfaces';
         },
         {
             provide: APP_GUARD,
-            useClass: PermissionsGuard
-        }
+            useClass: OrganizationRequiredGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: PermissionsGuard,
+        },
     ],
 })
 export class AppModule { }

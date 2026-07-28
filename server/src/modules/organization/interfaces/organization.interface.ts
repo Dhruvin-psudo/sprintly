@@ -4,9 +4,11 @@ export interface CreateOrganizationData {
     name: string;
     slug: string;
     email?: string;
-    createdBy: string
+    createdBy: string;
 }
 
 export interface CreateOrganizationResult {
     organization: Organization;
+    accessToken?: string;
+    refreshToken?: string;
 }

@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { RoleService } from '../role/role.service';
 import { TokenService } from '../token/token.service';
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { AuthInvalidCredentialsException } from '../../common/errors';
 import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -101,26 +100,42 @@ describe('AuthService', () => {
       mockUser.passwordHash = await bcrypt.hash('password123', 10);
     });
 
-    it('should throw UnauthorizedException if user is not found', async () => {
+    it('should throw AuthInvalidCredentialsException if user is not found', async () => {
       userService.getByEmail.mockResolvedValue(null);
       await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
-    it('should throw UnauthorizedException if password does not match', async () => {
+    it('should throw AuthInvalidCredentialsException if password does not match', async () => {
       userService.getByEmail.mockResolvedValue(mockUser);
       await expect(service.login({ ...loginDto, password: 'wrongpassword' })).rejects.toThrow(
         AuthInvalidCredentialsException
       );
     });
 
-    it('should throw ForbiddenException if account is SUSPENDED', async () => {
+    it('should throw AuthInvalidCredentialsException if account is SUSPENDED', async () => {
       userService.getByEmail.mockResolvedValue({ ...mockUser, status: UserStatus.SUSPENDED });
       await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
-    it('should throw ForbiddenException if account is INACTIVE', async () => {
+    it('should throw AuthInvalidCredentialsException if account is INACTIVE', async () => {
       userService.getByEmail.mockResolvedValue({ ...mockUser, status: UserStatus.INACTIVE });
       await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
+    });
+
+    it('should issue onboarding tokens if user has no org membership', async () => {
+      userService.getByEmail.mockResolvedValue({ ...mockUser, lastActiveOrgId: null });
+      roleService.getFirstMembershipWithRole.mockResolvedValue(null);
+      tokenService.generateOnboardingTokens.mockResolvedValue({
+        accessToken: 'onboarding-access',
+        refreshToken: 'onboarding-refresh',
+      });
+
+      const result = await service.login(loginDto);
+
+      expect(tokenService.revokeAllUserSessions).toHaveBeenCalledWith('u-100');
+      expect(tokenService.generateOnboardingTokens).toHaveBeenCalledWith('u-100');
+      expect(result.accessToken).toBe('onboarding-access');
+      expect(result.refreshToken).toBe('onboarding-refresh');
     });
 
     it('should login successfully with org context and generate auth tokens', async () => {
