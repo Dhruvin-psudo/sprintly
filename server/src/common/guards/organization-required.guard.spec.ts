@@ -34,13 +34,13 @@ describe('OrganizationRequiredGuard', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
-  it('should allow access if route allows onboarding', () => {
+  it('should allow access if route allows without org', () => {
     reflector.getAllAndOverride.mockImplementation((key) => {
-      if (key === 'allowOnboarding') return true;
+      if (key === 'allowWithoutOrg') return true;
       return false;
     });
 
-    const context = createMockContext({ userId: 'u-1', organizationId: null, isCompletedOnboarding: false });
+    const context = createMockContext({ userId: 'u-1', organizationId: null, hasOrganization: false });
     expect(guard.canActivate(context)).toBe(true);
   });
 
@@ -51,33 +51,33 @@ describe('OrganizationRequiredGuard', () => {
       userId: 'u-1',
       organizationId: null,
       roleId: null,
-      isCompletedOnboarding: false,
+      hasOrganization: false,
     });
 
     expect(() => guard.canActivate(context)).toThrow(AuthNoMembershipException);
   });
 
-  it('should throw AuthNoMembershipException if user is not completed onboarding', () => {
+  it('should throw AuthNoMembershipException if user has no organization', () => {
+    reflector.getAllAndOverride.mockReturnValue(false);
+
+    const context = createMockContext({
+      userId: 'u-1',
+      organizationId: null,
+      roleId: null,
+      hasOrganization: false,
+    });
+
+    expect(() => guard.canActivate(context)).toThrow(AuthNoMembershipException);
+  });
+
+  it('should allow access if user has organizationId and hasOrganization is true', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
 
     const context = createMockContext({
       userId: 'u-1',
       organizationId: 'org-1',
       roleId: 'role-1',
-      isCompletedOnboarding: false,
-    });
-
-    expect(() => guard.canActivate(context)).toThrow(AuthNoMembershipException);
-  });
-
-  it('should allow access if user has organizationId and isCompletedOnboarding is true', () => {
-    reflector.getAllAndOverride.mockReturnValue(false);
-
-    const context = createMockContext({
-      userId: 'u-1',
-      organizationId: 'org-1',
-      roleId: 'role-1',
-      isCompletedOnboarding: true,
+      hasOrganization: true,
     });
 
     expect(guard.canActivate(context)).toBe(true);

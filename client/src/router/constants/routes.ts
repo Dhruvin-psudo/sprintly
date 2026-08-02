@@ -1,12 +1,12 @@
 export const PUBLIC_ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
-    CREATE_ORGANIZATION: '/create-organization',
 } as const;
 
 export const PRIVATE_ROUTES = {
     HOME: '/',
     DASHBOARD: '/dashboard',
+    CREATE_ORGANIZATION: '/create-organization',
     WORKSPACES: '/workspaces',
     PROJECTS: '/projects',
     SPRINTS: '/sprints',

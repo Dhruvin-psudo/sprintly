@@ -14,7 +14,7 @@ describe('ProjectService', () => {
     organizationId: 'org-123',
     roleId: 'role-123',
     refreshTokenId: 'token-123',
-    isCompletedOnboarding: true,
+    hasOrganization: true,
   };
 
   beforeEach(async () => {

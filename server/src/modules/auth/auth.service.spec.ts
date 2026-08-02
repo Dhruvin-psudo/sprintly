@@ -37,12 +37,10 @@ describe('AuthService', () => {
           provide: TokenService,
           useValue: {
             revokeAllUserSessions: jest.fn(),
-            generateOnboardingTokens: jest.fn(),
             generateAuthTokens: jest.fn(),
             revokeToken: jest.fn(),
             verifyAndGetToken: jest.fn(),
             generateAccessToken: jest.fn(),
-            generateOnboardingAccessToken: jest.fn(),
           },
         },
       ],
@@ -59,7 +57,7 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('should register a user and generate onboarding tokens', async () => {
+    it('should register a user and return user data without tokens', async () => {
       const dto = {
         firstName: 'Jane',
         lastName: 'Doe',
@@ -69,20 +67,13 @@ describe('AuthService', () => {
       const createdUser = { id: 'u-1', email: 'jane@example.com' } as any;
 
       userService.create.mockResolvedValue(createdUser);
-      tokenService.generateOnboardingTokens.mockResolvedValue({
-        accessToken: 'onboarding-access',
-        refreshToken: 'onboarding-refresh',
-      });
 
       const result = await service.register(dto);
 
       expect(userService.create).toHaveBeenCalledWith(dto);
-      expect(tokenService.revokeAllUserSessions).toHaveBeenCalledWith('u-1');
-      expect(result).toEqual({
-        user: createdUser,
-        accessToken: 'onboarding-access',
-        refreshToken: 'onboarding-refresh',
-      });
+      expect(result).toEqual({ user: createdUser });
+      // No tokens should be generated
+      expect(tokenService.generateAuthTokens).not.toHaveBeenCalled();
     });
   });
 
@@ -122,23 +113,24 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(AuthInvalidCredentialsException);
     });
 
-    it('should issue onboarding tokens if user has no org membership', async () => {
+    it('should issue auth tokens with hasOrganization=false when user has no org membership', async () => {
       userService.getByEmail.mockResolvedValue({ ...mockUser, lastActiveOrgId: null });
       roleService.getFirstMembershipWithRole.mockResolvedValue(null);
-      tokenService.generateOnboardingTokens.mockResolvedValue({
-        accessToken: 'onboarding-access',
-        refreshToken: 'onboarding-refresh',
+      tokenService.generateAuthTokens.mockResolvedValue({
+        accessToken: 'no-org-access',
+        refreshToken: 'no-org-refresh',
       });
 
       const result = await service.login(loginDto);
 
       expect(tokenService.revokeAllUserSessions).toHaveBeenCalledWith('u-100');
-      expect(tokenService.generateOnboardingTokens).toHaveBeenCalledWith('u-100');
-      expect(result.accessToken).toBe('onboarding-access');
-      expect(result.refreshToken).toBe('onboarding-refresh');
+      expect(tokenService.generateAuthTokens).toHaveBeenCalledWith('u-100');
+      expect(result.accessToken).toBe('no-org-access');
+      expect(result.refreshToken).toBe('no-org-refresh');
+      expect(result.hasOrganization).toBe(false);
     });
 
-    it('should login successfully with org context and generate auth tokens', async () => {
+    it('should login successfully with org context and hasOrganization=true', async () => {
       userService.getByEmail.mockResolvedValue(mockUser);
       roleService.getMembershipWithRole.mockResolvedValue({
         organizationId: 'org-1',
@@ -157,6 +149,7 @@ describe('AuthService', () => {
         roleId: 'role-1',
       });
       expect(result.accessToken).toBe('auth-access');
+      expect(result.hasOrganization).toBe(true);
     });
   });
 
@@ -173,7 +166,7 @@ describe('AuthService', () => {
   });
 
   describe('refreshAccessToken', () => {
-    it('should verify REFRESH token and generate new access token', async () => {
+    it('should verify REFRESH token and generate new access token with org context', async () => {
       tokenService.verifyAndGetToken.mockResolvedValue({
         id: 'token-1',
         userId: 'u-1',
@@ -184,26 +177,24 @@ describe('AuthService', () => {
 
       const result = await service.refreshAccessToken('valid-jwt');
 
-      expect(tokenService.verifyAndGetToken).toHaveBeenCalledWith('valid-jwt', [
-        'REFRESH',
-        'ONBOARDING',
-      ]);
+      expect(tokenService.verifyAndGetToken).toHaveBeenCalledWith('valid-jwt', ['REFRESH']);
       expect(tokenService.generateAccessToken).toHaveBeenCalledWith('u-1', 'token-1', 'org-1', 'role-1');
       expect(result).toEqual({ accessToken: 'new-access-token' });
     });
 
-    it('should verify ONBOARDING token and generate new onboarding access token', async () => {
+    it('should verify REFRESH token and generate access token without org context', async () => {
       tokenService.verifyAndGetToken.mockResolvedValue({
         id: 'token-2',
         userId: 'u-1',
-        type: 'ONBOARDING',
+        type: 'REFRESH',
+        metadata: {},
       } as any);
-      tokenService.generateOnboardingAccessToken.mockReturnValue('new-onboarding-access-token');
+      tokenService.generateAccessToken.mockReturnValue('no-org-access-token');
 
       const result = await service.refreshAccessToken('valid-jwt');
 
-      expect(tokenService.generateOnboardingAccessToken).toHaveBeenCalledWith('u-1', 'token-2');
-      expect(result).toEqual({ accessToken: 'new-onboarding-access-token' });
+      expect(tokenService.generateAccessToken).toHaveBeenCalledWith('u-1', 'token-2', null, null);
+      expect(result).toEqual({ accessToken: 'no-org-access-token' });
     });
   });
 });

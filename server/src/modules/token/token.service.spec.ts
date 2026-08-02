@@ -50,7 +50,7 @@ describe('TokenService', () => {
   });
 
   describe('generateAccessToken', () => {
-    it('should sign jwt with authenticated user payload', () => {
+    it('should sign jwt with org context payload when org and role provided', () => {
       const token = service.generateAccessToken('u-1', 'rf-1', 'org-1', 'role-1');
 
       expect(jwtService.sign).toHaveBeenCalledWith({
@@ -58,29 +58,27 @@ describe('TokenService', () => {
         refreshTokenId: 'rf-1',
         organizationId: 'org-1',
         roleId: 'role-1',
-        isCompletedOnboarding: true,
+        hasOrganization: true,
       });
       expect(token).toBe('mock-jwt-string');
     });
-  });
 
-  describe('generateOnboardingAccessToken', () => {
-    it('should sign jwt with onboarding user payload', () => {
-      const token = service.generateOnboardingAccessToken('u-1', 'rf-1');
+    it('should sign jwt without org context when org and role are null', () => {
+      const token = service.generateAccessToken('u-1', 'rf-1', null, null);
 
       expect(jwtService.sign).toHaveBeenCalledWith({
         userId: 'u-1',
         refreshTokenId: 'rf-1',
         organizationId: null,
         roleId: null,
-        isCompletedOnboarding: false,
+        hasOrganization: false,
       });
       expect(token).toBe('mock-jwt-string');
     });
   });
 
   describe('generateAuthTokens', () => {
-    it('should generate auth tokens and create a refresh token in DB', async () => {
+    it('should generate auth tokens with org context and create a refresh token in DB', async () => {
       tokenRepository.createToken.mockResolvedValue({
         id: 'token-row-1',
         userId: 'u-1',
@@ -102,20 +100,19 @@ describe('TokenService', () => {
         refreshToken: 'mock-jwt-string',
       });
     });
-  });
 
-  describe('generateOnboardingTokens', () => {
-    it('should generate onboarding tokens and create an onboarding token in DB', async () => {
+    it('should generate auth tokens without org context when orgContext is omitted', async () => {
       tokenRepository.createToken.mockResolvedValue({
         id: 'token-row-2',
         userId: 'u-1',
       } as any);
 
-      const result = await service.generateOnboardingTokens('u-1');
+      const result = await service.generateAuthTokens('u-1');
 
       expect(tokenRepository.createToken).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: TokenType.ONBOARDING,
+          type: TokenType.REFRESH,
+          metadata: {},
         })
       );
       expect(result).toEqual({
@@ -174,16 +171,13 @@ describe('TokenService', () => {
   });
 
   describe('revokeAllUserSessions', () => {
-    it('should revoke both REFRESH and ONBOARDING tokens for user', async () => {
+    it('should revoke REFRESH tokens for user', async () => {
       await service.revokeAllUserSessions('u-1');
       expect(tokenRepository.revokeAllUserTokensByType).toHaveBeenCalledWith(
         'u-1',
         TokenType.REFRESH
       );
-      expect(tokenRepository.revokeAllUserTokensByType).toHaveBeenCalledWith(
-        'u-1',
-        TokenType.ONBOARDING
-      );
+      expect(tokenRepository.revokeAllUserTokensByType).toHaveBeenCalledTimes(1);
     });
   });
 });

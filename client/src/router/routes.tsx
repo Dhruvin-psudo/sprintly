@@ -44,10 +44,6 @@ export const router = createBrowserRouter([
             path: PUBLIC_ROUTES.LOGIN,
             element: <LoginPage />,
           },
-          {
-            path: PUBLIC_ROUTES.CREATE_ORGANIZATION,
-            element: <CreateOrganizationPage />,
-          },
         ],
       },
     ],
@@ -59,6 +55,15 @@ export const router = createBrowserRouter([
       {
         path: PRIVATE_ROUTES.DASHBOARD,
         element: <DashboardPage />,
+      },
+      {
+        element: <AuthLayout />,
+        children: [
+          {
+            path: PRIVATE_ROUTES.CREATE_ORGANIZATION,
+            element: <CreateOrganizationPage />,
+          },
+        ],
       },
     ],
   },
