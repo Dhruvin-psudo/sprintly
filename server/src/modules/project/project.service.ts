@@ -9,10 +9,10 @@ export class ProjectService {
     constructor(private readonly projectRepository: ProjectRepository) {}
 
     async createProject(dto: CreateProjectDto, user: IAuthenticatedUser) {
-        // Check if lead belongs to org
-        const isLeadValid = await this.projectRepository.validateOrgMembers(user.organizationId, [dto.leadId]);
+        // Check if lead belongs to org and is Owner/Admin
+        const isLeadValid = await this.projectRepository.validateProjectLead(user.organizationId, dto.leadId);
         if (!isLeadValid) {
-            throw new ValidationFailedException({ leadId: ['Project lead must be an active member of this organization.'] });
+            throw new ValidationFailedException({ leadId: ['Project lead must be an Owner or Admin of this organization.'] });
         }
 
         // Check if additional members belong to org
@@ -69,9 +69,9 @@ export class ProjectService {
         }
 
         if (dto.leadId) {
-            const isLeadValid = await this.projectRepository.validateOrgMembers(user.organizationId, [dto.leadId]);
+            const isLeadValid = await this.projectRepository.validateProjectLead(user.organizationId, dto.leadId);
             if (!isLeadValid) {
-                throw new ValidationFailedException({ leadId: ['Project lead must be an active member of this organization.'] });
+                throw new ValidationFailedException({ leadId: ['Project lead must be an Owner or Admin of this organization.'] });
             }
         }
 

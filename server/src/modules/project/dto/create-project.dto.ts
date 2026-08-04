@@ -1,6 +1,6 @@
 import { ProjectPhase, ProjectPriority } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsArray, IsDate, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import { IsArray, IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export class CreateProjectDto {
     @IsString()
@@ -13,9 +13,9 @@ export class CreateProjectDto {
     @MaxLength(500)
     description?: string;
 
-    @IsOptional()
-    @IsEnum(ProjectPhase)
-    phase?: ProjectPhase;
+    @IsNotEmpty({ message: 'Project status (phase) is required.' })
+    @IsEnum(ProjectPhase, { message: 'Invalid project status (phase).' })
+    phase!: ProjectPhase;
 
     @IsOptional()
     @IsEnum(ProjectPriority)

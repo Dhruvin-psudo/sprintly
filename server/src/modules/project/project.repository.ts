@@ -63,6 +63,23 @@ export class ProjectRepository {
         return count === new Set(userIds).size;
     }
 
+    async validateProjectLead(organizationId: string, leadId: string, tx?: Prisma.TransactionClient): Promise<boolean> {
+        if (!leadId) return false;
+        const db = this.client(tx);
+        const member = await db.organizationMember.findFirst({
+            where: {
+                organizationId,
+                userId: leadId
+            },
+            include: {
+                role: true
+            }
+        });
+        if (!member || !member.role) return false;
+        const roleName = member.role.name.toUpperCase();
+        return roleName === 'OWNER' || roleName === 'ADMIN';
+    }
+
     async create(data: CreateProjectData, tx?: Prisma.TransactionClient): Promise<Project> {
         const db = this.client(tx);
         const memberUserIds = Array.from(new Set([data.leadId, ...(data.memberIds || [])]));

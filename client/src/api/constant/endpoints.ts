@@ -7,4 +7,12 @@ export const API_ENDPOINTS = {
     ORGANIZATION: {
         CREATE: '/organization',
     },
+    PROJECT: {
+        CREATE: '/project',
+        ALL: '/projects',
+        BY_ID : (id: string) => `project/${id}`
+    },
+    USER: {
+        ALL: '/user/all',
+    },
 } as const

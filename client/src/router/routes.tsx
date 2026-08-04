@@ -1,8 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter } from "react-router-dom";
 import { lazy } from "react";
 
 import { LandingLayout } from "@/components/layout/landing-layout";
 import { AuthLayout } from "@/components/layout/auth-layout";
+import { AppLayout } from "@/components/layout/app-layout";
 import { LandingPage } from "@/pages/landing-page/landing-page";
 import { PublicRoute } from "./guards/public-route";
 import { ProtectedRoute } from "./guards/protected-route";
@@ -25,6 +27,12 @@ const CreateOrganizationPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import("@/pages/dashboard/dashboard-page").then((m) => ({
     default: m.DashboardPage,
+  }))
+);
+
+const ProjectPage = lazy(() =>
+  import("@/pages/project/project-page").then((m) => ({
+    default: m.ProjectPage,
   }))
 );
 
@@ -53,8 +61,17 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: PRIVATE_ROUTES.DASHBOARD,
-        element: <DashboardPage />,
+        element: <AppLayout />,
+        children: [
+          {
+            path: PRIVATE_ROUTES.DASHBOARD,
+            element: <DashboardPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.PROJECTS,
+            element: <ProjectPage />,
+          }
+        ],
       },
       {
         element: <AuthLayout />,
