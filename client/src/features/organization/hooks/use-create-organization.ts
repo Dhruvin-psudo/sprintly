@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { ICreateOrganizationRequest } from "../types";
-import { createOrganization } from "@/api/services/organization.api";
+import { organizationApi } from "@/api/services/organization.api";
 import { setAccessToken } from "@/api";
 import { PRIVATE_ROUTES } from "@/router/constants/routes";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ export function useCreateOrganization() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: ICreateOrganizationRequest) => createOrganization(data),
+    mutationFn: (data: ICreateOrganizationRequest) => organizationApi.create(data),
     onSuccess: (response) => {
       if (response.accessToken) {
         setAccessToken(response.accessToken);
