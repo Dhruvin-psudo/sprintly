@@ -4,27 +4,27 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Bell, LogOut } from "lucide-react";
-import { clearAccessToken } from "@/api";
-import { useNavigate } from "react-router-dom";
-import { PUBLIC_ROUTES } from "@/router/constants/routes";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
+import { Bell, LogOut } from "lucide-react";
 import { WorkspaceSwitcher } from "./components/workspace-switcher";
+import type { IUser } from "@/features/auth/types";
+import { getFullName, getInitials } from "@/utils/string";
+import { useLogout } from "@/features/auth/hooks/use-logout";
 
-export function AppHeader() {
-  const navigate = useNavigate();
+interface AppHeaderProps {
+  user: IUser;
+}
 
-  function handleLogout() {
-    clearAccessToken();
-    toast.info("Logged out successfully");
-    navigate(PUBLIC_ROUTES.LOGIN);
-  }
+export function AppHeader({ user }: AppHeaderProps) {
+  const logoutMutation = useLogout();
+
+  const userInitials = getInitials(user?.firstName, user?.lastName) || "U";
+  const userFullName = getFullName(user?.firstName, user?.lastName) || "User";
 
   return (
     <header className="h-16 border-b border-border/80 bg-card/50 backdrop-blur-xl shrink-0 z-40 flex items-center justify-between px-6">
@@ -43,30 +43,36 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger >
-            <Button variant="ghost" className="gap-2 pl-2 pr-3 py-5">
+            <Button variant="ghost" className="gap-2 pl-2 pr-3">
               <Avatar className="size-7">
-                <AvatarFallback className="bg-gradient-brand text-white text-xs">AM</AvatarFallback>
+                <AvatarFallback className="bg-gradient-brand text-white text-xs font-semibold">
+                  {userInitials}
+                </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:inline">Ava</span>
+              <span className="text-sm font-medium hidden sm:inline">
+                {user?.firstName || "User"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Ava Mitchell</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  ava@nebulastudio.com
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-              <LogOut className="mr-2 size-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col">
+                  <p className="text-sm font-medium">{userFullName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user?.email || ""}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => logoutMutation.mutate()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                <LogOut className="mr-2 size-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
