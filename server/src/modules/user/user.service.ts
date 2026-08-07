@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UserRepository } from './user.repository';
+import { UserRepository, UserWithMembershipRole } from './user.repository';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt'
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
@@ -9,6 +9,14 @@ import { getRoleHierarchyLevel } from '../../common/constants/permissions';
 import { UserQueryDto } from './dto/user-query.dto';
 import { PaginatedResult } from '../../common/dto';
 import { AuthEmailAlreadyExistsException, AuthInvalidCredentialsException, ResourceNotFoundException } from '../../common/errors';
+
+export interface UserWithCurrentRole extends Omit<User, 'passwordHash'> {
+    currentRole: {
+        id: string;
+        name: string;
+        hierarchyLevel: number;
+    } | null;
+}
 
 @Injectable()
 export class UserService {
@@ -59,13 +67,28 @@ export class UserService {
         organizationId: string,
         callerRoleId: string,
         query: UserQueryDto
-    ): Promise<PaginatedResult<Omit<User, 'passwordHash'>>> {
-        const { data, total} = await this.userRepository.findByOrganization(organizationId, {
+    ): Promise<PaginatedResult<UserWithCurrentRole>> {
+        const { data, total } = await this.userRepository.findByOrganization(organizationId, {
             ...query,
             callerRoleId
-        })
+        });
 
-        return PaginatedResult.create(data, total, query.page, query.limit)
+        const mappedData: UserWithCurrentRole[] = data.map((user: UserWithMembershipRole) => {
+            const { memberships, ...rest } = user;
+            const role = memberships?.[0]?.role ?? null;
+            return {
+                ...rest,
+                currentRole: role
+                    ? {
+                        id: role.id,
+                        name: role.name,
+                        hierarchyLevel: getRoleHierarchyLevel(role.name),
+                    }
+                    : null,
+            };
+        });
+
+        return PaginatedResult.create(mappedData, total, query.page, query.limit);
     }
 
     /**
@@ -91,7 +114,7 @@ export class UserService {
         return user;
     }
 
-    async getMe(userId: string, organizationId: string) {
+    async getMe(userId: string, organizationId: string): Promise<UserWithCurrentRole> {
         const user = await this.userRepository.getWithMembership(userId, organizationId);
 
         if(!user) {

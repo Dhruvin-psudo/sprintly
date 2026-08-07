@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenType } from '@prisma/client';
 import { TokenRepository } from './token.repository'
-import { IAuthenticatedUser, IOnboardingUser } from '../../common/interfaces';
+import { IJwtUser } from '../../common/interfaces';
 import { randomUUID } from 'crypto';
 import { AuthResetTokenInvalidException } from '../../common/errors';
 
@@ -28,49 +28,32 @@ export class TokenService {
     ) { }
 
     /**
-     * Generate Access Token for Authenticated Users (with Org & Role Context)
+     * Generate Access Token (with optional Org & Role Context)
      */
     generateAccessToken(
         userId: string,
         refreshTokenId: string,
-        organizationId: string,
-        roleId: string
+        organizationId?: string | null,
+        roleId?: string | null
     ): string {
-        const payload: IAuthenticatedUser = {
+        const payload: IJwtUser = {
             userId,
             refreshTokenId,
-            organizationId,
-            roleId,
-            isCompletedOnboarding: true
+            organizationId: organizationId ?? null,
+            roleId: roleId ?? null,
+            hasOrganization: !!(organizationId && roleId)
         }
 
         return this.jwtService.sign(payload)
     }
 
     /**
-     * Generate Access Token for Onboarding Users (without Org Context)
-     */
-    generateOnboardingAccessToken(
-        userId: string,
-        refreshTokenId: string
-    ): string {
-        const payload: IOnboardingUser = {
-            userId,
-            refreshTokenId,
-            organizationId: null,
-            roleId: null,
-            isCompletedOnboarding: false
-        }
-
-        return this.jwtService.sign(payload)
-    }
-
-    /**
-     * Generate Full Auth Tokens (Refresh Token + Auth Access Token with Org/Role Context)
+     * Generate Full Auth Tokens (Refresh Token + Access Token)
+     * orgContext is optional — when absent, tokens are issued without org/role context.
      */
     async generateAuthTokens(
         userId: string,
-        orgContext: OrgTokenContext
+        orgContext?: OrgTokenContext
     ): Promise<GeneratedTokens> {
         // Step 1: Refresh Token
         const familyId = randomUUID();
@@ -99,10 +82,9 @@ export class TokenService {
             type: tokenType,
             token: refreshJwt,
             familyId,
-            metadata: {
-                organizationId: orgContext.organizationId,
-                roleId: orgContext.roleId,
-            },
+            metadata: orgContext
+                ? { organizationId: orgContext.organizationId, roleId: orgContext.roleId }
+                : {},
             expiresAt,
         });
 
@@ -110,45 +92,8 @@ export class TokenService {
         const accessToken = this.generateAccessToken(
             userId,
             tokenRow.id,
-            orgContext.organizationId,
-            orgContext.roleId
-        );
-
-        return { accessToken, refreshToken: refreshJwt };
-    }
-
-    /**
-     * Generate Onboarding Tokens for new register flow (TokenType.ONBOARDING)
-     */
-    async generateOnboardingTokens(userId: string): Promise<GeneratedTokens> {
-        const familyId = randomUUID();
-
-        const refreshTokenExpirationDays = this.configService.get<number>(
-            'REFRESH_TOKEN_EXPIRATION_DAYS',
-            7,
-        );
-
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + refreshTokenExpirationDays);
-
-        const tokenType = TokenType.ONBOARDING;
-
-        const refreshJwt = this.jwtService.sign(
-            { sub: userId, tokenType, familyId },
-            { expiresIn: `${refreshTokenExpirationDays}d` },
-        );
-
-        const tokenRow = await this.tokenRepository.createToken({
-            userId,
-            type: tokenType,
-            token: refreshJwt,
-            familyId,
-            expiresAt,
-        });
-
-        const accessToken = this.generateOnboardingAccessToken(
-            userId,
-            tokenRow.id
+            orgContext?.organizationId ?? null,
+            orgContext?.roleId ?? null
         );
 
         return { accessToken, refreshToken: refreshJwt };
@@ -159,12 +104,11 @@ export class TokenService {
      * Revoke Refresh Token (If Exists)
      * @param userId
      * @param orgContext
-     * @param refreshTokenId
      * @returns
      */
     async issueAuthTokens(
         userId: string,
-        orgContext: OrgTokenContext,
+        orgContext?: OrgTokenContext,
     ): Promise<GeneratedTokens> {
         // Revoke all prior active sessions (Single Active Session Policy)
         await this.revokeAllUserSessions(userId);
@@ -221,11 +165,10 @@ export class TokenService {
     }
 
     /**
-     * Revoke All Active Sessions (Refresh & Onboarding Tokens) for a User
+     * Revoke All Active Refresh Sessions for a User
      * Enforces Single Active Session Policy
      */
     async revokeAllUserSessions(userId: string): Promise<void> {
         await this.tokenRepository.revokeAllUserTokensByType(userId, TokenType.REFRESH);
-        await this.tokenRepository.revokeAllUserTokensByType(userId, TokenType.ONBOARDING);
     }
 }

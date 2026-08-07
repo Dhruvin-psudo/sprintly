@@ -1,8 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter } from "react-router-dom";
 import { lazy } from "react";
 
 import { LandingLayout } from "@/components/layout/landing-layout";
 import { AuthLayout } from "@/components/layout/auth-layout";
+import { AppLayout } from "@/components/layout/app-layout";
 import { LandingPage } from "@/pages/landing-page/landing-page";
 import { PublicRoute } from "./guards/public-route";
 import { ProtectedRoute } from "./guards/protected-route";
@@ -28,6 +30,12 @@ const DashboardPage = lazy(() =>
   }))
 );
 
+const ProjectPage = lazy(() =>
+  import("@/pages/project/project-page").then((m) => ({
+    default: m.ProjectPage,
+  }))
+);
+
 export const router = createBrowserRouter([
   /* Public-only auth routes (redirects to dashboard if already logged in) */
   {
@@ -44,10 +52,6 @@ export const router = createBrowserRouter([
             path: PUBLIC_ROUTES.LOGIN,
             element: <LoginPage />,
           },
-          {
-            path: PUBLIC_ROUTES.CREATE_ORGANIZATION,
-            element: <CreateOrganizationPage />,
-          },
         ],
       },
     ],
@@ -57,8 +61,26 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: PRIVATE_ROUTES.DASHBOARD,
-        element: <DashboardPage />,
+        element: <AppLayout />,
+        children: [
+          {
+            path: PRIVATE_ROUTES.DASHBOARD,
+            element: <DashboardPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.PROJECTS,
+            element: <ProjectPage />,
+          }
+        ],
+      },
+      {
+        element: <AuthLayout />,
+        children: [
+          {
+            path: PRIVATE_ROUTES.CREATE_ORGANIZATION,
+            element: <CreateOrganizationPage />,
+          },
+        ],
       },
     ],
   },

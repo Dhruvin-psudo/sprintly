@@ -2,6 +2,7 @@ export interface IOrganization {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
+  readonly plan: string;
   readonly email?: string;
   readonly createdBy: string;
   readonly createdAt: string;

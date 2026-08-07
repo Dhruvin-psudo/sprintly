@@ -2,7 +2,7 @@ export interface PaginationData {
     readonly page: number;
     readonly limit: number;
     readonly total: number;
-    readonly totalPage: number;
+    readonly totalPages: number;
 
 
     readonly [extra: string] : unknown;

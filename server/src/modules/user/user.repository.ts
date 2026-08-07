@@ -3,6 +3,15 @@ import { PrismaService } from "../../prisma";
 import { Prisma, User, UserStatus } from '@prisma/client';
 import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SEARCH_MODE, SystemRole } from "../../common/constants";
 
+export interface UserWithMembershipRole extends Omit<User, 'passwordHash'> {
+    memberships: Array<{
+        role: {
+            id: string;
+            name: string;
+        } | null;
+    }>;
+}
+
 interface FindByOrganizationQuery {
     search?: string;
     status?: UserStatus;
@@ -150,7 +159,7 @@ export class UserRepository {
     async findByOrganization(
         organizationId: string,
         query: FindByOrganizationQuery
-    ): Promise<{ data: Omit<User, 'passwordHash'>[]; total: number }> {
+    ): Promise<{ data: UserWithMembershipRole[]; total: number }> {
         // Owner can see all members, but everyone can not see OWNER-role users.
         const isCallerOwner = query.callerRoleId
             ? !!(await this.prisma.role.findFirst({
@@ -190,14 +199,20 @@ export class UserRepository {
             [query.sortBy || DEFAULT_SORT_FIELD]: query.sortOrder || DEFAULT_SORT_ORDER,
         };
 
-        const include = query.populate?.includes('memberships')
-            ? {
-                memberships: {
-                    where: { organizationId },
-                    include: { role: { select: { id: true, name: true } } },
-                }
-            }
-            : undefined;
+        const include = {
+            memberships: {
+                where: { organizationId },
+                take: 1,
+                include: {
+                    role: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+        };
 
         const [data, total] = await Promise.all([
             this.prisma.user.findMany({
@@ -209,7 +224,7 @@ export class UserRepository {
                 include,
             }),
             this.prisma.user.count({ where })
-        ])
+        ]);
 
         return { data, total };
     }

@@ -36,13 +36,8 @@ export class AuthContoller {
     @Post('register')
     async register(
         @Body() registerUserDto: RegisterUserDto,
-        @Res({ passthrough: true }) res: Response,
     ) {
-        const {refreshToken, ...result} = await this.authService.register(registerUserDto)
-        
-        if (refreshToken) {
-            this.setRefreshTokenCookie(res, refreshToken)
-        }
+        const result = await this.authService.register(registerUserDto)
 
         return ApiResponse.ok(result, 'Registration successful')
     }

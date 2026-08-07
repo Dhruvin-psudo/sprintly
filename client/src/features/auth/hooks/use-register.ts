@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { IRegisterRequest } from "../types";
-import { register } from "@/api/services/auth.api";
+import { register, login } from "@/api/services/auth.api";
 import { setAccessToken } from "@/api";
-import { PUBLIC_ROUTES } from "@/router/constants/routes";
+import { PRIVATE_ROUTES } from "@/router/constants/routes";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -13,11 +13,29 @@ export function useRegister() {
 
     return useMutation({
         mutationFn: (data: IRegisterRequest) => register(data),
-        onSuccess: (response) => {
-            setAccessToken(response.accessToken);
-            queryClient.invalidateQueries({ queryKey: ['user', 'me']});
-            navigate(PUBLIC_ROUTES.CREATE_ORGANIZATION);
-            toast.success('Account created successfully. Please create your organization.')
+        onSuccess: async (_response, variables) => {
+            try {
+                // Auto-login: fire login request with the same credentials
+                const loginResponse = await login({
+                    email: variables.email,
+                    password: variables.passwordHash,
+                });
+
+                setAccessToken(loginResponse.accessToken);
+                queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+
+                if (loginResponse.hasOrganization) {
+                    navigate(PRIVATE_ROUTES.DASHBOARD);
+                } else {
+                    navigate(PRIVATE_ROUTES.CREATE_ORGANIZATION);
+                }
+
+                toast.success('Account created successfully');
+            } catch {
+                // If auto-login fails, still notify success and let user login manually
+                toast.success('Account created. Please login to continue.');
+                navigate('/login');
+            }
         },
         onError: (error: unknown) => {
             if(axios.isAxiosError(error)) {

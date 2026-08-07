@@ -16,7 +16,13 @@ export function useLogin() {
         onSuccess: (response) => {
             setAccessToken(response.accessToken)
             queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
-            navigate(PRIVATE_ROUTES.DASHBOARD)
+
+            if (response.hasOrganization) {
+                navigate(PRIVATE_ROUTES.DASHBOARD)
+            } else {
+                navigate(PRIVATE_ROUTES.CREATE_ORGANIZATION)
+            }
+
             toast.success('Login successful')
         },
         onError: (error: unknown) => {

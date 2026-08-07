@@ -19,7 +19,7 @@ export class PaginatedResult<T> {
             page,
             limit,
             total,
-            totalPage: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limit)
         })
     }
 }

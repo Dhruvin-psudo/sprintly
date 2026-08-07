@@ -1,18 +1,13 @@
-interface IBaseUser {
+export interface IJwtUser {
     userId: string;
     refreshTokenId: string;
+    organizationId: string | null;
+    roleId: string | null;
+    hasOrganization: boolean;
 }
 
-export interface IAuthenticatedUser extends IBaseUser {
+export type IAuthenticatedUser = IJwtUser & {
     organizationId: string;
     roleId: string;
-    isCompletedOnboarding: true;
-}
-
-export interface IOnboardingUser extends IBaseUser {
-    organizationId: null;
-    roleId: null;
-    isCompletedOnboarding: false;
-}
-
-export type IJwtUser = IAuthenticatedUser | IOnboardingUser;
+    hasOrganization: true;
+};

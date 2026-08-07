@@ -46,7 +46,7 @@ describe('AuthContoller', () => {
   });
 
   describe('register', () => {
-    it('should register a user and set refresh cookie if returned', async () => {
+    it('should register a user and return user data without setting cookie', async () => {
       const registerDto = {
         firstName: 'John',
         lastName: 'Doe',
@@ -55,34 +55,24 @@ describe('AuthContoller', () => {
       };
       const result = {
         user: { id: 'u-1', email: 'john@example.com' } as any,
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
       };
       (authService.register as jest.Mock).mockResolvedValue(result);
 
-      const res = mockResponse();
-      const response = await controller.register(registerDto, res);
+      const response = await controller.register(registerDto);
 
       expect(authService.register).toHaveBeenCalledWith(registerDto);
-      expect(res.cookie).toHaveBeenCalledWith(
-        'refreshToken',
-        'refresh-token',
-        expect.objectContaining({ path: '/auth' })
-      );
-      expect(response.data).toEqual({
-        user: result.user,
-        accessToken: result.accessToken,
-      });
+      expect(response.data).toEqual({ user: result.user });
     });
   });
 
   describe('login', () => {
-    it('should login a user and set refresh cookie', async () => {
+    it('should login a user, set refresh cookie, and include hasOrganization', async () => {
       const loginDto = { email: 'john@example.com', password: 'password123' };
       const result = {
         user: { id: 'u-1', email: 'john@example.com' } as any,
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
+        hasOrganization: true,
       };
       (authService.login as jest.Mock).mockResolvedValue(result);
 
@@ -94,6 +84,7 @@ describe('AuthContoller', () => {
       expect(response.data).toEqual({
         user: result.user,
         accessToken: result.accessToken,
+        hasOrganization: true,
       });
     });
   });

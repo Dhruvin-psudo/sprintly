@@ -32,6 +32,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      className="rounded-full"
     >
       {theme === "dark" ? (
         <Sun className="size-4 transition-transform duration-300" />

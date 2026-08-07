@@ -33,22 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new AuthTokenInvalidException()
         }
         
-        if (payload.organizationId && payload.roleId) {
-            return {
-                userId: payload.userId,
-                refreshTokenId: payload.refreshTokenId,
-                organizationId: payload.organizationId,
-                roleId: payload.roleId,
-                isCompletedOnboarding: true
-            };
-        }
-
         return {
             userId: payload.userId,
             refreshTokenId: payload.refreshTokenId,
-            organizationId: null,
-            roleId: null,
-            isCompletedOnboarding: false
+            organizationId: payload.organizationId ?? null,
+            roleId: payload.roleId ?? null,
+            hasOrganization: !!(payload.organizationId && payload.roleId),
         };
     }
 }

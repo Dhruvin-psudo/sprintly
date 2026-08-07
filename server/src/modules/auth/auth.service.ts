@@ -12,6 +12,11 @@ export interface AuthTokensResponse {
     user: Omit<User, 'passwordHash'>;
     accessToken: string;
     refreshToken: string;
+    hasOrganization: boolean;
+}
+
+export interface RegisterResponse {
+    user: Omit<User, 'passwordHash'>;
 }
 
 @Injectable()
@@ -24,21 +29,12 @@ export class AuthService {
         private readonly tokenService: TokenService
     ) { }
 
-    async register(registerUserDto: RegisterUserDto): Promise<AuthTokensResponse> {
+    async register(registerUserDto: RegisterUserDto): Promise<RegisterResponse> {
         const user = await this.userService.create(registerUserDto);
-        await this.tokenService.revokeAllUserSessions(user.id);
-        const { accessToken, refreshToken } = await this.tokenService.generateOnboardingTokens(user.id);
 
-        void this.userService.updateLastLoginAt(user.id).catch((err: unknown) => {
-            this.logger.warn(
-                { userId: user.id, err: err instanceof Error ? err.message : String(err) },
-                'Failed to update lastLoginAt on register',
-            );
-        });
+        this.logger.log({ userId: user.id }, 'User registered successfully');
 
-        this.logger.log({ userId: user.id }, 'User registered with onboarding tokens');
-
-        return { user, accessToken, refreshToken };
+        return { user };
     }
 
     /** Login User */
@@ -80,9 +76,9 @@ export class AuthService {
         const { passwordHash: _hash, ...userWithoutPassword } = user;
 
         if (!membership) {
-            this.logger.log({ userId: user.id }, 'Login successful without membership (Issued onboarding tokens)');
-            const { accessToken, refreshToken } = await this.tokenService.generateOnboardingTokens(user.id);
-            return { user: userWithoutPassword, accessToken, refreshToken };
+            this.logger.log({ userId: user.id }, 'Login successful without membership (no org)');
+            const { accessToken, refreshToken } = await this.tokenService.generateAuthTokens(user.id);
+            return { user: userWithoutPassword, accessToken, refreshToken, hasOrganization: false };
         }
 
         if (user.lastActiveOrgId !== membership.organizationId) {
@@ -96,7 +92,7 @@ export class AuthService {
 
         this.logger.log({ userId: user.id }, 'Login successful with org membership');
 
-        return { user: userWithoutPassword, accessToken, refreshToken };
+        return { user: userWithoutPassword, accessToken, refreshToken, hasOrganization: true };
     }
 
     /** Logout User */
@@ -111,23 +107,15 @@ export class AuthService {
 
     /** Refresh Access Token */
     async refreshAccessToken(refreshJwt: string) : Promise<{ accessToken: string }> {
-        const tokenRecord = await this.tokenService.verifyAndGetToken(refreshJwt, [TokenType.REFRESH, TokenType.ONBOARDING])
+        const tokenRecord = await this.tokenService.verifyAndGetToken(refreshJwt, [TokenType.REFRESH])
 
-        if (tokenRecord.type === TokenType.ONBOARDING) {
-            const accessToken = this.tokenService.generateOnboardingAccessToken(
-                tokenRecord.userId,
-                tokenRecord.id
-            );
-            return { accessToken };
-        }
-
-        const metadata = tokenRecord.metadata as { organizationId: string; roleId: string };
+        const metadata = tokenRecord.metadata as { organizationId?: string; roleId?: string } | null;
 
         const accessToken = this.tokenService.generateAccessToken(
             tokenRecord.userId,
             tokenRecord.id,
-            metadata.organizationId,
-            metadata.roleId
+            metadata?.organizationId ?? null,
+            metadata?.roleId ?? null
         );
 
         return { accessToken };

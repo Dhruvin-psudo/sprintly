@@ -26,10 +26,9 @@ export interface IRegisterRequest {
 export interface ILoginResponse {
   accessToken: string;
   user: IUser;
+  hasOrganization: boolean;
 }
 
 export interface IRegisterResponse {
-  accessToken: string;
   user: IUser;
 }
-

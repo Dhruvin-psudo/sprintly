@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { OrganizationService } from './organization.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { AllowOnboarding } from '../../common/decorators/allow-onboarding.decorator';
+import { AllowWithoutOrg } from '../../common/decorators/allow-without-org.decorator';
 import type { IJwtUser, IRequestBy } from '../../common/interfaces';
 import { ApiResponse } from '../../common/dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -45,7 +45,7 @@ export class OrganizationController {
     return ApiResponse.ok(orgs, 'All Organizations fetched successfully')
   } 
 
-  @AllowOnboarding()
+  @AllowWithoutOrg()
   @Post()
   async create(
     @Body() createOrgDto: CreateOrganizationDto,
