@@ -29,9 +29,19 @@ export class ProjectService {
             throw new DuplicateResourceException('Project', 'name');
         }
 
+        const codeTaken = await this.projectRepository.isCodeTakenInOrg(user.organizationId, dto.code);
+        if (codeTaken) {
+            throw new DuplicateResourceException('Project', 'code');
+        }
+
+        if (dto.startDate && dto.dueDate && new Date(dto.dueDate) < new Date(dto.startDate)) {
+            throw new ValidationFailedException({ dueDate: ['Due date cannot be earlier than start date.'] });
+        }
+
         return this.projectRepository.create({
             organizationId: user.organizationId,
             name: dto.name,
+            code: dto.code,
             description: dto.description,
             phase: dto.phase,
             priority: dto.priority,

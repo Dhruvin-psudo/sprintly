@@ -269,6 +269,7 @@ model Project {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name        String  @db.VarChar(100)
+  code        String? @db.VarChar(6)
   description String? @db.VarChar(500)
 
   phase    ProjectPhase    @default(PLANNING)
@@ -302,6 +303,7 @@ model Project {
   // tasks Task[]
 
   @@unique([organizationId, name])
+  @@unique([organizationId, code])
   @@index([organizationId, isDeleted])
   @@index([leadId])
   @@map("projects")

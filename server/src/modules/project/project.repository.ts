@@ -8,6 +8,7 @@ type PrismaLike = PrismaService | Prisma.TransactionClient;
 export interface CreateProjectData {
     organizationId: string;
     name: string;
+    code: string;
     description?: string;
     phase?: ProjectPhase;
     priority?: ProjectPriority;
@@ -20,6 +21,7 @@ export interface CreateProjectData {
 
 export interface UpdateProjectData {
     name?: string;
+    code?: string;
     description?: string;
     phase?: ProjectPhase;
     priority?: ProjectPriority;
@@ -43,6 +45,21 @@ export class ProjectRepository {
             where: {
                 organizationId,
                 name: { equals: name, mode: 'insensitive' },
+                isDeleted: false,
+                ...(excludeProjectId ? { id: { not: excludeProjectId } } : {})
+            },
+            select: { id: true }
+        });
+        return project !== null;
+    }
+
+    async isCodeTakenInOrg(organizationId: string, code: string, excludeProjectId?: string, tx?: Prisma.TransactionClient): Promise<boolean> {
+        if (!code) return false;
+        const db = this.client(tx);
+        const project = await db.project.findFirst({
+            where: {
+                organizationId,
+                code: { equals: code.toUpperCase(), mode: 'insensitive' },
                 isDeleted: false,
                 ...(excludeProjectId ? { id: { not: excludeProjectId } } : {})
             },
@@ -88,6 +105,7 @@ export class ProjectRepository {
             data: {
                 organizationId: data.organizationId,
                 name: data.name,
+                code: data.code.toUpperCase(),
                 description: data.description,
                 phase: data.phase ?? ProjectPhase.PLANNING,
                 priority: data.priority ?? ProjectPriority.MEDIUM,
@@ -141,8 +159,19 @@ export class ProjectRepository {
 
     async findMany(organizationId: string, query: ProjectQueryDto, tx?: Prisma.TransactionClient) {
         const db = this.client(tx);
-        const { page = 1, limit = 20, search, phase, priority } = query;
+        const { page = 1, search, phase, priority } = query;
+        const limit = query.limit ?? 9;
         const skip = (page - 1) * limit;
+
+        const rawOrder = query.sortOrder ?? 'desc';
+        const sortDirection: Prisma.SortOrder = rawOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+        const validSortFields = ['phase', 'priority', 'dueDate', 'startDate'];
+        const sortField = validSortFields.includes(query.sortBy || '') ? query.sortBy! : 'createdAt';
+
+        const orderBy: Prisma.ProjectOrderByWithRelationInput = {
+            [sortField]: sortDirection
+        };
 
         const where: Prisma.ProjectWhereInput = {
             organizationId,
@@ -164,7 +193,7 @@ export class ProjectRepository {
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 include: {
                     leadUser: {
                         select: { id: true, firstName: true, lastName: true, email: true }

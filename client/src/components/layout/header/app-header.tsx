@@ -17,7 +17,7 @@ import { getFullName, getInitials } from "@/utils/string";
 import { useLogout } from "@/features/auth/hooks/use-logout";
 
 interface AppHeaderProps {
-  user: IUser;
+  user?: IUser;
 }
 
 export function AppHeader({ user }: AppHeaderProps) {

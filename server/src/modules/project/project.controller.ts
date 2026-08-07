@@ -27,8 +27,12 @@ export class ProjectController {
     @Query() query: ProjectQueryDto,
     @CurrentUser() user: IAuthenticatedUser,
   ) {
-    const projects = await this.projectService.getProjects(user, query);
-    return ApiResponse.ok(projects, 'Projects fetched successfully');
+    const { items, total, page, limit, totalPages } = await this.projectService.getProjects(user, query);
+    return ApiResponse.paginated(
+      items,
+      { page, limit, total, totalPage: totalPages, totalPages },
+      'Projects fetched successfully'
+    );
   }
 
   @Get(':id')
