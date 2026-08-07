@@ -159,8 +159,9 @@ export class ProjectRepository {
 
     async findMany(organizationId: string, query: ProjectQueryDto, tx?: Prisma.TransactionClient) {
         const db = this.client(tx);
-        const { page = 1, search, phase, priority } = query;
-        const limit = query.limit ?? 9;
+        const { search, phase, priority } = query;
+        const page = Number(query.page) || 1;
+        const limit = 6;
         const skip = (page - 1) * limit;
 
         const rawOrder = query.sortOrder ?? 'desc';

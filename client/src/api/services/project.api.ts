@@ -19,11 +19,11 @@ export const projectApis = {
         { params }
       )
       .then((r) => ({
-        data: r.data.data ?? [],
+          data: r.data.data ?? [],
         page: r.data.meta?.page ?? 1,
         limit: r.data.meta?.limit ?? 20,
         total: r.data.meta?.total ?? 0,
-        totalPages: r.data.meta?.totalPages ?? (r.data.meta as any)?.totalPage ?? 1,
+        totalPages: r.data.meta?.totalPages ?? 1,
       })),
 
   getById: (id: string) => 

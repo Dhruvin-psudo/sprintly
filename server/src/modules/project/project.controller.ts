@@ -30,8 +30,8 @@ export class ProjectController {
     const { items, total, page, limit, totalPages } = await this.projectService.getProjects(user, query);
     return ApiResponse.paginated(
       items,
-      { page, limit, total, totalPage: totalPages, totalPages },
-      'Projects fetched successfully'
+      { page, limit, total, totalPages },
+      'Projects fetched successfully', 
     );
   }
 

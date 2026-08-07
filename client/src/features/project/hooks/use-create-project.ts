@@ -1,3 +1,4 @@
+import type { AxiosError } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ICreateProjectPayload } from "../types";
@@ -12,7 +13,7 @@ export function useCreateProject() {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project created successfully");
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string | string[] }>) => {
       const message = error.response?.data?.message || "Failed to create project";
       toast.error(typeof message === "string" ? message : JSON.stringify(message));
     },  

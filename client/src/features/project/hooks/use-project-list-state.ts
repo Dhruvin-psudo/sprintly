@@ -24,6 +24,7 @@ export function useProjectListState() {
     }, [searchInput]);
 
     const projects = useMemo(() => data?.data ?? [] as IProjectResponse[], [data?.data]);
+    const total = data?.total ?? 0;
     const pageCount = data?.totalPages ?? 0;
     const currentPage = (data?.page ?? 1) - 1; 
 
@@ -56,6 +57,7 @@ export function useProjectListState() {
     return {
         // data
         projects,
+        total,
         pageCount,
         currentPage,
 
