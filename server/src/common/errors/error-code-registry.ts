@@ -354,6 +354,53 @@ const ERROR_CODE_REGISTRY: ReadonlyMap<ErrorCode, IErrorCodeMetaData> = new Map<
             message: 'You do not have the required permission',
         },
     ],
+
+    // 15xxx — Tasks
+    [
+        ErrorCode.TASK_NOT_FOUND,
+        {
+            errorCode: ErrorCode.TASK_NOT_FOUND,
+            code: 'TASK_NOT_FOUND',
+            httpStatus: 404,
+            message: 'Task not found',
+        },
+    ],
+    [
+        ErrorCode.TASK_PROJECT_MISMATCH,
+        {
+            errorCode: ErrorCode.TASK_PROJECT_MISMATCH,
+            code: 'TASK_PROJECT_MISMATCH',
+            httpStatus: 400,
+            message: 'Task was not found in the project',
+        },
+    ],
+    [
+        ErrorCode.TASK_ASSIGNEE_NOT_MEMBER,
+        {
+            errorCode: ErrorCode.TASK_ASSIGNEE_NOT_MEMBER,
+            code: 'TASK_ASSIGNEE_NOT_MEMBER',
+            httpStatus: 400,
+            message: 'Assigned user must be an active member of this organization',
+        },
+    ],
+    [
+        ErrorCode.TASK_ALREADY_COMPLETED,
+        {
+            errorCode: ErrorCode.TASK_ALREADY_COMPLETED,
+            code: 'TASK_ALREADY_COMPLETED',
+            httpStatus: 400,
+            message: 'Completed tasks cannot be modified',
+        },
+    ],
+    [
+        ErrorCode.INVALID_TASK_DUE_DATE,
+        {
+            errorCode: ErrorCode.INVALID_TASK_DUE_DATE,
+            code: 'INVALID_TASK_DUE_DATE',
+            httpStatus: 400,
+            message: 'Invalid task due date',
+        },
+    ],
 ])
 
 export function getErrorMetaData(errorCode: ErrorCode) : IErrorCodeMetaData {

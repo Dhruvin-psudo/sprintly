@@ -138,3 +138,36 @@ export class RoleHasMembersException extends DomainException {
         );
     }
 }
+
+// 15xxx — Tasks
+
+export class TaskNotFoundException extends DomainException {
+    constructor(taskId: string) {
+        super(ErrorCode.TASK_NOT_FOUND, `Task not found`);
+    }
+}
+
+export class TaskProjectMismatchException extends DomainException {
+    constructor(taskId: string, projectId: string) {
+        super(ErrorCode.TASK_PROJECT_MISMATCH, `Task was not in this project`);
+    }
+}
+
+export class TaskAssigneeNotMemberException extends DomainException {
+    constructor(assigneeId: string) {
+        super(ErrorCode.TASK_ASSIGNEE_NOT_MEMBER, `Assigned user must be an active member of this organization`);
+    }
+}
+
+export class TaskAlreadyCompletedException extends DomainException {
+    constructor() {
+        super(ErrorCode.TASK_ALREADY_COMPLETED, `Task marked as COMPLETED cannot be moved to another status`);
+    }
+}
+
+export class InvalidTaskDueDateException extends DomainException {
+    constructor(message: string) {
+        super(ErrorCode.INVALID_TASK_DUE_DATE, message);
+    }
+}
+
