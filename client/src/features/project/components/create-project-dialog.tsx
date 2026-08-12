@@ -292,17 +292,16 @@ export function CreateProjectDialog({
                       onValueChange={(val) => field.onChange(val)}
                       disabled={isPending}
                     >
-                      <SelectTrigger className={cn("w-full h-9 border border-input bg-transparent px-3 cursor-pointer rounded-md", errors.phase && "border-destructive focus-visible:ring-destructive/20")}>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select status">
                           {selectedOption?.label}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent alignItemWithTrigger={false} className="p-1 rounded-md shadow-lg border border-border bg-popover min-w-[200px]">
+                      <SelectContent alignItemWithTrigger={false}>
                         {STATUS_OPTIONS.map((option) => (
                           <SelectItem
                             key={option.value}
                             value={option.value}
-                            className="py-2 px-3 cursor-pointer rounded-md transition-colors data-[selected]:bg-purple-100 data-[selected]:text-purple-900 dark:data-[selected]:bg-purple-950/60 dark:data-[selected]:text-purple-200 focus:bg-purple-50"
                           >
                             {option.label}
                           </SelectItem>
@@ -333,17 +332,16 @@ export function CreateProjectDialog({
                       onValueChange={(val) => field.onChange(val)}
                       disabled={isPending}
                     >
-                      <SelectTrigger className="w-full h-9 border border-input bg-transparent px-3 cursor-pointer rounded-md">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select priority">
                           {selectedOption?.label}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent alignItemWithTrigger={false} className="p-1 rounded-md shadow-lg border border-border bg-popover min-w-[200px]">
+                      <SelectContent alignItemWithTrigger={false} >
                         {PRIORITY_OPTIONS.map((option) => (
                           <SelectItem
                             key={option.value}
                             value={option.value}
-                            className="py-2 px-3 rounded-md text-sm cursor-pointer transition-colors data-[selected]:bg-purple-100 data-[selected]:text-purple-900 dark:data-[selected]:bg-purple-950/60 dark:data-[selected]:text-purple-200 focus:bg-purple-50"
                           >
                             {option.label}
                           </SelectItem>
