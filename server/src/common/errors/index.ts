@@ -22,4 +22,9 @@ export {
     RoleNotFoundException,
     RoleIsSystemException,
     RoleHasMembersException,
+    TaskNotFoundException,
+    TaskProjectMismatchException,
+    TaskAssigneeNotMemberException,
+    TaskAlreadyCompletedException,
+    InvalidTaskDueDateException,
 } from './domain-exceptions'

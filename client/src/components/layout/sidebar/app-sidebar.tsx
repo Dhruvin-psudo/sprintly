@@ -17,7 +17,7 @@ import { PRIVATE_ROUTES } from "@/router/constants/routes";
 const navItems = [
   { name: "Dashboard", to: PRIVATE_ROUTES.DASHBOARD, icon: LayoutDashboard, pathname: "/app/dashboard" },
   { name: "Projects", to: PRIVATE_ROUTES.PROJECTS, icon: FolderKanban, pathname: "/app/projects" },
-  { name: "Board", to: PRIVATE_ROUTES.SPRINTS, icon: KanbanSquare, pathname: "/app/board" },
+  { name: "Board", to: PRIVATE_ROUTES.TASKS, icon: KanbanSquare, pathname: "/app/board" },
   { name: "Calendar", to: PRIVATE_ROUTES.HOME + "calendar", icon: CalendarDays, pathname: "/app/calendar" },
   { name: "Team", to: PRIVATE_ROUTES.MEMBERS, icon: Users, pathname: "/app/team" },
   { name: "Reports", to: PRIVATE_ROUTES.REPORTS, icon: LineChart, pathname: "/app/reports" },

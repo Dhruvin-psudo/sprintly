@@ -36,6 +36,12 @@ const ProjectPage = lazy(() =>
   }))
 );
 
+const TasksPage = lazy(() =>
+  import("@/pages/task/tasks-page").then((m) => ({
+    default: m.TasksPage,
+  }))
+);
+
 export const router = createBrowserRouter([
   /* Public-only auth routes (redirects to dashboard if already logged in) */
   {
@@ -70,7 +76,15 @@ export const router = createBrowserRouter([
           {
             path: PRIVATE_ROUTES.PROJECTS,
             element: <ProjectPage />,
-          }
+          },
+          {
+            path: PRIVATE_ROUTES.TASKS,
+            element: <TasksPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.SPRINTS,
+            element: <TasksPage />,
+          },
         ],
       },
       {

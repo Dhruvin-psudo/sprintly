@@ -32,7 +32,9 @@ describe('ProjectService', () => {
             addMembers: jest.fn(),
             removeMember: jest.fn(),
             isNameTakenInOrg: jest.fn(),
+            isCodeTakenInOrg: jest.fn(),
             validateOrgMembers: jest.fn(),
+            validateProjectLead: jest.fn(),
           },
         },
       ],
@@ -48,8 +50,10 @@ describe('ProjectService', () => {
 
   describe('createProject', () => {
     it('should create a project successfully', async () => {
+      projectRepository.validateProjectLead.mockResolvedValue(true);
       projectRepository.validateOrgMembers.mockResolvedValue(true);
       projectRepository.isNameTakenInOrg.mockResolvedValue(false);
+      projectRepository.isCodeTakenInOrg.mockResolvedValue(false);
       const mockCreatedProject = { id: 'proj-1', name: 'Sprintly V1' } as any;
       projectRepository.create.mockResolvedValue(mockCreatedProject);
 
@@ -63,13 +67,13 @@ describe('ProjectService', () => {
 
       const result = await service.createProject(dto, mockUser);
 
-      expect(projectRepository.validateOrgMembers).toHaveBeenCalledWith(mockUser.organizationId, ['user-123']);
+      expect(projectRepository.validateProjectLead).toHaveBeenCalledWith(mockUser.organizationId, 'user-123');
       expect(projectRepository.isNameTakenInOrg).toHaveBeenCalledWith(mockUser.organizationId, 'Sprintly V1');
       expect(result).toEqual(mockCreatedProject);
     });
 
     it('should throw ValidationFailedException if lead is not an org member', async () => {
-      projectRepository.validateOrgMembers.mockResolvedValue(false);
+      projectRepository.validateProjectLead.mockResolvedValue(false);
 
       const dto = {
         name: 'Sprintly V1',
@@ -80,6 +84,7 @@ describe('ProjectService', () => {
     });
 
     it('should throw DuplicateResourceException if project name is taken in org', async () => {
+      projectRepository.validateProjectLead.mockResolvedValue(true);
       projectRepository.validateOrgMembers.mockResolvedValue(true);
       projectRepository.isNameTakenInOrg.mockResolvedValue(true);
 
