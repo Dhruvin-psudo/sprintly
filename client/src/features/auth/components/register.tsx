@@ -1,8 +1,12 @@
 import { useRegister } from "@/features/auth/hooks/use-register";
 import { RegisterForm, type RegisterFormValues } from "@/features/auth/forms/register-form";
 
-export function Register() {
-  const registerMutation = useRegister()
+interface RegisterProps {
+  onSuccess?: (loginResponse: { accessToken: string; hasOrganization: boolean }) => void;
+}
+
+export function Register({ onSuccess }: RegisterProps = {}) {
+  const registerMutation = useRegister({ onSuccess })
 
   function handleRegister(data: RegisterFormValues) {
     registerMutation.mutate(data)

@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { WorkspaceSwitcher } from "./components/workspace-switcher";
+import { NotificationsPopover } from "./components/notifications-popover";
 import type { IUser } from "@/features/auth/types";
 import { getFullName, getInitials } from "@/utils/string";
 import { useLogout } from "@/features/auth/hooks/use-logout";
@@ -37,9 +38,7 @@ export function AppHeader({ user }: AppHeaderProps) {
       <div className="flex items-center gap-3">
         <ThemeToggle />
         
-        <Button variant="ghost" size="icon" className="relative rounded-full">
-          <Bell className="size-4" />
-        </Button>
+        <NotificationsPopover />
 
         <DropdownMenu>
           <DropdownMenuTrigger >
