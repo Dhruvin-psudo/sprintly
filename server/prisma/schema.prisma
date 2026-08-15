@@ -61,6 +61,15 @@ enum TaskPriority {
   URGENT
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  REVOKED
+}
+
+
 model Organization {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
@@ -94,6 +103,7 @@ model Organization {
   members OrganizationMember[]
   projects Project[]
   tasks Task[]
+  invitations Invitation[]
 
   @@map("organizations")
 }
@@ -146,6 +156,7 @@ model User {
   createdTasks Task[] @relation("TaskCreatedBy")
   updatedTasks Task[] @relation("TaskUpdatedBy")
   deletedTasks Task[] @relation("TaskDeletedBy")
+  sentInvitations Invitation[] @relation("InvitationInvitedBy")
 
   @@map("users")
   @@index([email])
@@ -220,6 +231,7 @@ model Role {
   // Relations
   members OrganizationMember[]
   rolePermissions RolePermission[]
+  invitations Invitation[]
 
   // Audit FK relations
   createdByUser User? @relation("RoleCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -388,4 +400,32 @@ model Task {
   @@index([assigneeId])
   @@index([status])
   @@map("tasks")
-}
+}
+
+model Invitation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  email String @db.VarChar(255)
+
+  roleId String @map("role_id") @db.Uuid
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  token  String           @unique @db.Text
+  status InvitationStatus @default(PENDING)
+
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  invitedById String @map("invited_by_id") @db.Uuid
+  invitedByUser User @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([organizationId, email, status])
+  @@index([token])
+  @@map("invitations")
+}
+

@@ -1,12 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { ProjectRepository } from "./project.repository";
+import { RoleRepository } from "../role/role.repository";
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto, AssignProjectMemberDto } from "./dto";
 import { IAuthenticatedUser } from "../../common/interfaces";
 import { DuplicateResourceException, ResourceNotFoundException, ValidationFailedException } from "../../common/errors";
+import { SystemRole } from "../../common/constants";
 
 @Injectable()
 export class ProjectService {
-    constructor(private readonly projectRepository: ProjectRepository) {}
+    constructor(
+        private readonly projectRepository: ProjectRepository,
+        private readonly roleRepository: RoleRepository
+    ) {}
 
     async createProject(dto: CreateProjectDto, user: IAuthenticatedUser) {
         // Check if lead belongs to org and is Owner/Admin
@@ -54,7 +59,15 @@ export class ProjectService {
     }
 
     async getProjects(user: IAuthenticatedUser, query: ProjectQueryDto) {
-        return this.projectRepository.findMany(user.organizationId, query);
+        const role = await this.roleRepository.findRoleWithPermissions(user.roleId, user.organizationId);
+        const roleName = role?.name?.toUpperCase() ?? SystemRole.VIEWER;
+
+        return this.projectRepository.findMany({
+            organizationId: user.organizationId,
+            userId: user.userId,
+            roleName,
+            query
+        });
     }
 
     async getProjectById(id: string, user: IAuthenticatedUser) {
@@ -62,8 +75,21 @@ export class ProjectService {
         if (!project) {
             throw new ResourceNotFoundException('Project', id);
         }
+
+        const role = await this.roleRepository.findRoleWithPermissions(user.roleId, user.organizationId);
+        const roleName = role?.name?.toUpperCase() ?? SystemRole.VIEWER;
+        const isElevated = roleName === SystemRole.OWNER || roleName === SystemRole.ADMIN;
+
+        if (!isElevated) {
+            const isLeadOrMember = project.leadId === user.userId || project.members.some((m) => m.userId === user.userId || m.user.id === user.userId);
+            if (!isLeadOrMember) {
+                throw new ResourceNotFoundException('Project', id);
+            }
+        }
+
         return project;
     }
+
 
     async updateProject(id: string, dto: UpdateProjectDto, user: IAuthenticatedUser) {
         const existing = await this.projectRepository.findById(id, user.organizationId);

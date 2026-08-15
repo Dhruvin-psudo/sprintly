@@ -16,6 +16,7 @@ import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { ProjectModule } from './modules/project/project.module';
 import { TaskModule } from './modules/task/task.module';
+import { InvitationModule } from './modules/invitation/invitation.module';
 import type { Request } from 'express';
 import { IJwtUser } from './common/interfaces';
 
@@ -70,6 +71,7 @@ import { IJwtUser } from './common/interfaces';
         PermissionModule,
         ProjectModule,
         TaskModule,
+        InvitationModule,
     ],
     controllers: [AppController],
     providers: [
