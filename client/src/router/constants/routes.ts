@@ -1,7 +1,9 @@
 export const PUBLIC_ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
+    ACCEPT_INVITE: '/invite/accept',
 } as const;
+
 
 export const PRIVATE_ROUTES = {
     HOME: '/',

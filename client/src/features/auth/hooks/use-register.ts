@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { IRegisterRequest } from "../types";
 import { register, login } from "@/api/services/auth.api";
 import { setAccessToken } from "@/api";
@@ -7,9 +7,13 @@ import { PRIVATE_ROUTES } from "@/router/constants/routes";
 import { toast } from "sonner";
 import axios from "axios";
 
-export function useRegister() {
+export function useRegister(options?: {
+    onSuccess?: (loginResponse: { accessToken: string; hasOrganization: boolean }) => void;
+}) {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const queryClient = useQueryClient()
+    const inviteToken = searchParams.get('inviteToken') || searchParams.get('token');
 
     return useMutation({
         mutationFn: (data: IRegisterRequest) => register(data),
@@ -24,7 +28,11 @@ export function useRegister() {
                 setAccessToken(loginResponse.accessToken);
                 queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
 
-                if (loginResponse.hasOrganization) {
+                if (options?.onSuccess) {
+                    options.onSuccess(loginResponse);
+                } else if (inviteToken) {
+                    navigate(`${PRIVATE_ROUTES.DASHBOARD}?inviteToken=${inviteToken}`);
+                } else if (loginResponse.hasOrganization) {
                     navigate(PRIVATE_ROUTES.DASHBOARD);
                 } else {
                     navigate(PRIVATE_ROUTES.CREATE_ORGANIZATION);
