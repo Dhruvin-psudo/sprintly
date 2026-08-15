@@ -2,8 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma";
 import { Project, ProjectMember, Prisma, ProjectPhase, ProjectPriority } from "@prisma/client";
 import { ProjectQueryDto } from "./dto";
+import { SystemRole } from "../../common/constants";
 
 type PrismaLike = PrismaService | Prisma.TransactionClient;
+
+export interface FindProjectsOptions {
+    organizationId: string;
+    userId: string;
+    roleName: string;
+    query: ProjectQueryDto;
+}
 
 export interface CreateProjectData {
     organizationId: string;
@@ -157,8 +165,9 @@ export class ProjectRepository {
         });
     }
 
-    async findMany(organizationId: string, query: ProjectQueryDto, tx?: Prisma.TransactionClient) {
+    async findMany(options: FindProjectsOptions, tx?: Prisma.TransactionClient) {
         const db = this.client(tx);
+        const { organizationId, userId, roleName, query } = options;
         const { search, phase, priority } = query;
         const page = Number(query.page) || 1;
         const limit = 6;
@@ -174,20 +183,40 @@ export class ProjectRepository {
             [sortField]: sortDirection
         };
 
-        const where: Prisma.ProjectWhereInput = {
-            organizationId,
-            isDeleted: false,
-            ...(phase ? { phase } : {}),
-            ...(priority ? { priority } : {}),
-            ...(search
-                ? {
-                      OR: [
-                          { name: { contains: search, mode: 'insensitive' } },
-                          { description: { contains: search, mode: 'insensitive' } }
-                      ]
-                  }
-                : {})
-        };
+        const isElevatedRole = roleName.toUpperCase() === SystemRole.OWNER || roleName.toUpperCase() === SystemRole.ADMIN;
+
+        const AND: Prisma.ProjectWhereInput[] = [
+            { organizationId },
+            { isDeleted: false }
+        ];
+
+        if (!isElevatedRole) {
+            AND.push({
+                OR: [
+                    { leadId: userId },
+                    { members: { some: { userId } } }
+                ]
+            });
+        }
+
+        if (phase) {
+            AND.push({ phase });
+        }
+
+        if (priority) {
+            AND.push({ priority });
+        }
+
+        if (search) {
+            AND.push({
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { description: { contains: search, mode: 'insensitive' } }
+                ]
+            });
+        }
+
+        const where: Prisma.ProjectWhereInput = { AND };
 
         const [items, total] = await Promise.all([
             db.project.findMany({
@@ -209,6 +238,7 @@ export class ProjectRepository {
 
         return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
+
 
     async update(id: string, organizationId: string, data: UpdateProjectData, tx?: Prisma.TransactionClient): Promise<Project> {
         const db = this.client(tx);

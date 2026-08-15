@@ -14,10 +14,24 @@ export const API_ENDPOINTS = {
     PROJECT: {
         CREATE: '/project',
         ALL: '/project',
-        BY_ID : (id: string) => `project/${id}`
+        BY_ID: (id: string) => `/project/${id}`,
     },
     USER: {
         ALL: '/user/all',
-        ME: 'user'
+        ME: '/user',
     },
-} as const
+    ROLE: {
+        ALL: '/role',
+        MEMBER: (userId: string) => `/role/member/${userId}`,
+    },
+    INVITATION: {
+        SEND: '/invitation/send',
+        ALL: '/invitation',
+        VERIFY: (token: string) => `/invitation/verify/${token}`,
+        ACCEPT: '/invitation/accept',
+        REVOKE: (id: string) => `/invitation/${id}`,
+        RESEND: (id: string) => `/invitation/resend/${id}`,
+        DECLINE: '/invitation/decline',
+        MY_PENDING: '/invitation/my-pending',
+    },
+} as const

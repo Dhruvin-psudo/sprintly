@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ILoginRequest } from "../types";
 import { login } from "@/api/services/auth.api";
@@ -9,7 +9,10 @@ import { PRIVATE_ROUTES } from "@/router/constants/routes";
 
 export function useLogin() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const queryClient = useQueryClient();
+
+    const inviteToken = searchParams.get('inviteToken') || searchParams.get('token');
 
     return useMutation({
         mutationFn: (data: ILoginRequest) => login(data),
@@ -17,7 +20,9 @@ export function useLogin() {
             setAccessToken(response.accessToken)
             queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
 
-            if (response.hasOrganization) {
+            if (inviteToken) {
+                navigate(`${PRIVATE_ROUTES.DASHBOARD}?inviteToken=${inviteToken}`)
+            } else if (response.hasOrganization) {
                 navigate(PRIVATE_ROUTES.DASHBOARD)
             } else {
                 navigate(PRIVATE_ROUTES.CREATE_ORGANIZATION)

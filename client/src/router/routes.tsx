@@ -42,7 +42,24 @@ const TasksPage = lazy(() =>
   }))
 );
 
+const MembersPage = lazy(() =>
+  import("@/pages/members/members-page").then((m) => ({
+    default: m.MembersPage,
+  }))
+);
+
+const AcceptInvitePage = lazy(() =>
+  import("@/pages/auth/accept-invite-page").then((m) => ({
+    default: m.AcceptInvitePage,
+  }))
+);
+
 export const router = createBrowserRouter([
+  /* Public invitation acceptance route */
+  {
+    path: PUBLIC_ROUTES.ACCEPT_INVITE,
+    element: <AcceptInvitePage />,
+  },
   /* Public-only auth routes (redirects to dashboard if already logged in) */
   {
     element: <PublicRoute />,
@@ -85,8 +102,13 @@ export const router = createBrowserRouter([
             path: PRIVATE_ROUTES.SPRINTS,
             element: <TasksPage />,
           },
+          {
+            path: PRIVATE_ROUTES.MEMBERS,
+            element: <MembersPage />,
+          },
         ],
       },
+
       {
         element: <AuthLayout />,
         children: [
