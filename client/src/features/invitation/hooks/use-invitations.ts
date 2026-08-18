@@ -6,5 +6,8 @@ export function useInvitations(params?: InvitationQueryInput) {
     queryKey: ['invitations', params],
     queryFn: () => invitationApi.list(params),
     refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }

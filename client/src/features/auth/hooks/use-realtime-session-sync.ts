@@ -8,14 +8,37 @@ import { PRIVATE_ROUTES } from '@/router/constants/routes';
 import type { IOrganization } from '@/features/organization/types';
 import { ORGANIZATION_QUERY_KEYS } from '@/features/organization/constants/organization.constants';
 
+const ORGANIZATION_TABLE_QUERY_KEYS = [
+  ['invitations'],
+  ['workspace-members'],
+] as const;
+
+type OrganizationChangeSubject = 'members' | 'invitations' | 'members-and-invitations';
+
+function tableQueryKeysForSubject(subject: OrganizationChangeSubject) {
+  if (subject === 'members') return [['workspace-members']] as const;
+  if (subject === 'invitations') return [['invitations']] as const;
+  return ORGANIZATION_TABLE_QUERY_KEYS;
+}
+
 function tokenOrganizationId(token: string | null): string | null {
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1])) as { organizationId?: string | null };
+    const encodedPayload = token.split('.')[1];
+    if (!encodedPayload) return null;
+    const base64Payload = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = base64Payload.padEnd(base64Payload.length + ((4 - (base64Payload.length % 4)) % 4), '=');
+    const payload = JSON.parse(atob(paddedPayload)) as { organizationId?: string | null };
     return payload.organizationId ?? null;
   } catch {
     return null;
   }
+}
+
+function activeOrganizationId(queryClient: ReturnType<typeof useQueryClient>): string | null {
+  return tokenOrganizationId(getAccessToken())
+    ?? queryClient.getQueryData<IOrganization>(ORGANIZATION_QUERY_KEYS.current)?.id
+    ?? null;
 }
 
 export function useRealtimeSessionSync() {
@@ -25,6 +48,22 @@ export function useRealtimeSessionSync() {
   const [tokenVersion, setTokenVersion] = useState(0);
   const reconcilingRef = useRef(false);
   const originalOrganizationRef = useRef<string | null>(tokenOrganizationId(getAccessToken()));
+
+  const refreshOrganizationTables = useCallback(async (
+    subject: OrganizationChangeSubject = 'members-and-invitations',
+  ) => {
+    const queryKeys = tableQueryKeysForSubject(subject);
+    await Promise.all(
+      queryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey, refetchType: 'none' }),
+      ),
+    );
+    await Promise.all(
+      queryKeys.map((queryKey) =>
+        queryClient.refetchQueries({ queryKey, type: 'active' }),
+      ),
+    );
+  }, [queryClient]);
 
   const reconcile = useCallback(async () => {
     if (reconcilingRef.current || !originalOrganizationRef.current) return;
@@ -73,23 +112,25 @@ export function useRealtimeSessionSync() {
       transports: ['websocket', 'polling'],
     });
 
-    socket.on('organization.changed', () => {
-      queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
-      queryClient.invalidateQueries({ queryKey: ['org-members'] });
-      queryClient.invalidateQueries({ queryKey: ['invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.current });
+    socket.on('connect', () => {
+      void refreshOrganizationTables();
+    });
+
+    socket.on('organization.changed', (payload?: {
+      organizationId?: string;
+      subject?: OrganizationChangeSubject;
+    }) => {
+      const currentOrganizationId = activeOrganizationId(queryClient);
+      if (payload?.organizationId && currentOrganizationId && payload.organizationId !== currentOrganizationId) return;
+      void refreshOrganizationTables(payload?.subject ?? 'members-and-invitations');
     });
 
     socket.on('invitations.changed', () => {
       queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
     });
 
     socket.on('membership.changed', (payload?: { organizationId?: string; reason?: string }) => {
-      const activeOrgId = tokenOrganizationId(getAccessToken());
+      const activeOrgId = activeOrganizationId(queryClient);
       const affectedOrgId = payload?.organizationId;
 
       if (affectedOrgId && activeOrgId && affectedOrgId !== activeOrgId) {
@@ -102,7 +143,7 @@ export function useRealtimeSessionSync() {
     });
 
     return () => { socket.disconnect(); };
-  }, [queryClient, reconcile, tokenVersion]);
+  }, [queryClient, reconcile, refreshOrganizationTables, tokenVersion]);
 
   useEffect(() => {
     const timer = window.setInterval(async () => {

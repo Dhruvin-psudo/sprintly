@@ -101,6 +101,10 @@ export class InvitationService {
           invitedById: caller.userId,
         });
 
+        const invitedUser = await this.userRepository.getByEmail(email);
+        if (invitedUser) this.realtimeService.invitationChanged(invitedUser.id);
+        this.realtimeService.organizationChanged(caller.organizationId, 'invitations');
+
         await this.mailService.sendInvitationEmail({
           to: email,
           inviterName,
@@ -111,9 +115,6 @@ export class InvitationService {
 
         const { token: _invitationToken, ...safeInvitation } = invitation;
         sentInvitations.push(safeInvitation);
-        const invitedUser = await this.userRepository.getByEmail(email);
-        if (invitedUser) this.realtimeService.invitationChanged(invitedUser.id);
-        this.realtimeService.organizationChanged(caller.organizationId, 'invitations');
         this.logger.log({ email, orgId: caller.organizationId }, 'Organization invitation sent');
       } catch (err: unknown) {
         this.logger.error({ email, err: err instanceof Error ? err.message : String(err) }, 'Error processing invitation');
@@ -199,8 +200,7 @@ export class InvitationService {
 
       await this.userRepository.updateLastActiveOrg(user.id, invitation.organizationId);
       await this.invitationRepository.updateStatus(invitation.id, InvitationStatus.ACCEPTED);
-      this.realtimeService.organizationChanged(invitation.organizationId, 'members');
-      this.realtimeService.organizationChanged(invitation.organizationId, 'invitations');
+      this.realtimeService.organizationChanged(invitation.organizationId, 'members-and-invitations');
       this.realtimeService.invitationChanged(user.id);
 
       await this.tokenService.revokeAllUserSessions(user.id);
@@ -241,8 +241,7 @@ export class InvitationService {
 
     await this.userRepository.updateLastActiveOrg(newUser.id, invitation.organizationId);
     await this.invitationRepository.updateStatus(invitation.id, InvitationStatus.ACCEPTED);
-    this.realtimeService.organizationChanged(invitation.organizationId, 'members');
-    this.realtimeService.organizationChanged(invitation.organizationId, 'invitations');
+    this.realtimeService.organizationChanged(invitation.organizationId, 'members-and-invitations');
 
     const { accessToken, refreshToken } = await this.tokenService.generateAuthTokens(newUser.id, {
       organizationId: invitation.organizationId,
@@ -328,9 +327,6 @@ export class InvitationService {
     const invitation = await this.invitationRepository.findPendingByIdForUser(id, user.email);
     if (!invitation) throw new ResourceNotFoundException('Invitation', id);
     const result = await this.acceptInvitation({ token: invitation.token });
-    this.realtimeService.organizationChanged(invitation.organizationId, 'members');
-    this.realtimeService.organizationChanged(invitation.organizationId, 'invitations');
-    this.realtimeService.invitationChanged(caller.userId);
     return result;
   }
 
