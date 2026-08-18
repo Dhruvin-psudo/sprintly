@@ -1,7 +1,7 @@
 import { organizationApi } from "@/api/services/organization.api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ORGANIZATION_QUERY_KEYS } from "../constants/organization.constants";
+import { ORGANIZATION_QUERY_KEYS } from "@/features/organization/constants/organization.constants";
 import { useOrganizationTransition } from "./use-organization-transition";
 
 export function useSwitchOrganization() {

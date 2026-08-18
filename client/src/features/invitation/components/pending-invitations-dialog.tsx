@@ -2,18 +2,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { usePendingInvitationsModal } from '../../../store/pending-invitations-modal-context';
+import { usePendingInvitationsModal } from '@/store/pending-invitations-modal-context';
 import { useMyPendingInvitations } from '../hooks/use-my-pending-invitations';
 import { useAcceptPendingInvitation } from '../hooks/use-accept-pending-invitation';
 import { useDeclinePendingInvitation } from '../hooks/use-decline-pending-invitation';
-import { getRoleBadgeStyle } from '../../../utils/role-style';
+import { getRoleBadgeStyle } from '@/utils/role-style';
 import type { InvitationItem } from '@/api/services/invitation.api';
 
 export function PendingInvitationsDialog() {
   const { isOpen, setIsOpen, closeModal } = usePendingInvitationsModal();
   const { invitations, isLoading } = useMyPendingInvitations();
-  const acceptMutation = useAcceptPendingInvitation();
-  const declineMutation = useDeclinePendingInvitation();
+  const acceptMutation = useAcceptPendingInvitation({ onSuccess: closeModal });
+  const declineMutation = useDeclinePendingInvitation({ onSuccess: closeModal });
 
   const count = invitations.length;
   const titleText =

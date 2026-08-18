@@ -25,14 +25,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrgMembers } from "../hooks/use-org-members";
 import { useRoles } from "../hooks/use-roles";
-import { useCurrentOrganization } from "../../organization/hooks/use-current-organization";
+import { useCurrentOrganization } from "@/features/organization/hooks/use-current-organization";
 import { useUpdateMemberRole } from "../hooks/use-update-member-role";
 import { useRemoveOrgMember } from "../hooks/use-remove-org-member";
-import { getRoleBadgeStyle } from "../../../utils/role-style";
+import { getRoleBadgeStyle } from "@/utils/role-style";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import type { IUser } from "@/features/auth/types";
-
-
 
 const ROLE_HIERARCHY_RANK: Record<string, number> = {
   OWNER: 1,
@@ -73,8 +71,8 @@ export function MembersListTable() {
       status: "ACTIVE",
       lastLoginAt: null,
       lastActiveOrgId: currentOrg.id,
-      createdAt: currentOrg.createdAt || new Date().toISOString(),
-      updatedAt: currentOrg.updatedAt || new Date().toISOString(),
+      createdAt: currentOrg.createdAt,
+      updatedAt: currentOrg.updatedAt,
       currentRole: { id: "role-owner", name: "Owner", hierarchyLevel: 1 },
     };
     membersList.unshift(ownerUser);
@@ -238,7 +236,7 @@ export function MembersListTable() {
       {/* Edit Role Dialog */}
       {editingUser && (
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-100">
             <DialogHeader>
               <DialogTitle>Change Role</DialogTitle>
               <DialogDescription>
@@ -298,7 +296,7 @@ export function MembersListTable() {
       {/* Remove Member Dialog */}
       {deletingUser && (
         <Dialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-100">
             <DialogHeader>
               <DialogTitle>Remove Member</DialogTitle>
               <DialogDescription>
