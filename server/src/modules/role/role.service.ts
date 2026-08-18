@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
 import { MembershipWithRole, RoleRepository } from './role.repository';
 import { PRISMA_ERROR, SystemRole } from '../../common/constants';
 import { OrganizationMember, Prisma, Role } from '@prisma/client';
@@ -10,13 +10,15 @@ import { PaginatedResult } from '../../common/dto';
 import { formatPermission, getRoleHierarchyLevel } from '../../common/constants/permissions';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { RemoveMemberDto } from './dto/remove-member.dto';
+import { RealtimeService } from '../realtime/realtime.service';
 
 @Injectable()
 export class RoleService {
     private readonly logger = new Logger(RoleService.name);
 
     constructor(
-        private readonly roleRepository: RoleRepository
+        private readonly roleRepository: RoleRepository,
+        @Optional() private readonly realtimeService?: RealtimeService,
     ) {}
 
     async createRole(createRoleDto: CreateRoleDto, createdBy: IAuthenticatedUser): Promise<Role> {
@@ -154,6 +156,18 @@ export class RoleService {
             throw new AuthNoMembershipException()
         }
 
+        const callerMembership = await this.roleRepository.findMembershipWithRole(
+            assignedBy.userId,
+            assignedBy.organizationId,
+        );
+        if (!callerMembership) throw new AuthNoMembershipException();
+        if (userId === assignedBy.userId || targetMembership.role.name === SystemRole.OWNER) {
+            throw new ForbiddenException('You cannot change this member role');
+        }
+        if (getRoleHierarchyLevel(callerMembership.role.name) <= getRoleHierarchyLevel(targetMembership.role.name)) {
+            throw new ForbiddenException('You can only change roles for lower-ranked members');
+        }
+
         try {
             await this.roleRepository.updateMemberRole(userId, roleId, assignedBy)
 
@@ -161,6 +175,8 @@ export class RoleService {
                 { userId, roleId, organizationId: assignedBy.organizationId},
                 'Member role updated'
             )
+            this.realtimeService?.organizationChanged(assignedBy.organizationId, 'members');
+            this.realtimeService?.membershipChanged(userId, assignedBy.organizationId, 'role-changed');
         } catch (error) {
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -252,10 +268,28 @@ export class RoleService {
 
     // Remove Member from Organization
     async removeMember(userId: string, removedBy: IAuthenticatedUser) : Promise<void> {
+        if (userId === removedBy.userId) {
+            throw new ForbiddenException('You cannot remove yourself from the organization');
+        }
+
+        const [callerMembership, targetMembership] = await Promise.all([
+            this.roleRepository.findMembershipWithRole(removedBy.userId, removedBy.organizationId),
+            this.roleRepository.findMembershipWithRole(userId, removedBy.organizationId),
+        ]);
+        if (!callerMembership || !targetMembership) throw new AuthNoMembershipException();
+        if (targetMembership.role.name === SystemRole.OWNER) {
+            throw new ForbiddenException('Organization owners cannot be removed');
+        }
+        if (getRoleHierarchyLevel(callerMembership.role.name) <= getRoleHierarchyLevel(targetMembership.role.name)) {
+            throw new ForbiddenException('You can only remove lower-ranked members');
+        }
+
         try {
             await this.roleRepository.deleteMember(userId, removedBy)
 
             this.logger.log({ userId, orgId: removedBy.organizationId}, "Member removed")
+            this.realtimeService?.organizationChanged(removedBy.organizationId, 'members');
+            this.realtimeService?.membershipChanged(userId, removedBy.organizationId, 'removed');
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError &&
                 error.code === PRISMA_ERROR.RECORD_NOT_FOUND
