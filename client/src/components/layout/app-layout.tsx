@@ -5,9 +5,14 @@ import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { AcceptInviteModal } from "@/features/invitation/components/accept-invite-modal";
 import { PendingInvitationsModalProvider } from "@/store/pending-invitations-modal-context";
 import { PendingInvitationsDialog } from "@/features/invitation/components/pending-invitations-dialog";
+import { useRealtimeSessionSync } from "@/features/auth/hooks/use-realtime-session-sync";
+import { SessionAccessDialog } from "@/features/organization/components/session-access-dialog";
+import { useSwitchOrganization } from "@/features/organization/hooks/use-switch-organization";
 
 export function AppLayout() {
   const { data: user } = useCurrentUser();
+  const { accessChanged, organizations } = useRealtimeSessionSync();
+  const switchOrganizationMutation = useSwitchOrganization();
 
   return (
     <PendingInvitationsModalProvider>
@@ -23,6 +28,12 @@ export function AppLayout() {
         </div>
         <AcceptInviteModal />
         <PendingInvitationsDialog />
+        <SessionAccessDialog
+          open={accessChanged}
+          organizations={organizations}
+          isPending={switchOrganizationMutation.isPending}
+          onSelect={(organizationId) => switchOrganizationMutation.mutate(organizationId)}
+        />
       </div>
     </PendingInvitationsModalProvider>
   );

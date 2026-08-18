@@ -7,6 +7,7 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './modules/auth/guard/auth.guard';
 import { OrganizationRequiredGuard } from './common/guards/organization-required.guard';
+import { MembershipContextGuard } from './common/guards/membership-context.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -17,6 +18,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { ProjectModule } from './modules/project/project.module';
 import { TaskModule } from './modules/task/task.module';
 import { InvitationModule } from './modules/invitation/invitation.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import type { Request } from 'express';
 import { IJwtUser } from './common/interfaces';
 
@@ -72,6 +74,7 @@ import { IJwtUser } from './common/interfaces';
         ProjectModule,
         TaskModule,
         InvitationModule,
+        RealtimeModule,
     ],
     controllers: [AppController],
     providers: [
@@ -79,6 +82,10 @@ import { IJwtUser } from './common/interfaces';
         {
             provide: APP_GUARD,
             useClass: AuthGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: MembershipContextGuard,
         },
         {
             provide: APP_GUARD,

@@ -96,3 +96,8 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Realtime deployment
+
+Set `REDIS_URL` in multi-instance deployments so Socket.IO organization and
+user-room events are shared across API nodes. Without it, the realtime client
+falls back to its session and invitation polling intervals.
