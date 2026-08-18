@@ -40,6 +40,8 @@ export class OrganizationController {
   };
 
   @Get('all')
+  @AllowWithoutOrg()
+  @AllowWithoutOrg()
   async getAllOrg(@CurrentUser('userId') userId : string) {
     const orgs = await this.organizationService.getUserOrganizations(userId);
     return ApiResponse.ok(orgs, 'All Organizations fetched successfully')
@@ -62,6 +64,8 @@ export class OrganizationController {
   };
 
   @Post('switch')
+  @AllowWithoutOrg()
+  @AllowWithoutOrg()
   async switch(
     @Body() dto: SwitchOrganizationDto,
     @CurrentUser() switchedBy: IRequestBy,
