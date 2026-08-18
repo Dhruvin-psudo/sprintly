@@ -5,5 +5,6 @@ export function useInvitations(params?: InvitationQueryInput) {
   return useQuery({
     queryKey: ['invitations', params],
     queryFn: () => invitationApi.list(params),
+    refetchInterval: 30_000,
   });
 }

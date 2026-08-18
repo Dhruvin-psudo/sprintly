@@ -105,6 +105,12 @@ export const invitationApi = {
   decline: (token: string) =>
     apiClient.post<IApiResponse<void>>(API_ENDPOINTS.INVITATION.DECLINE, { token }).then((r) => unwrapResponse(r.data)),
 
+  acceptForUser: (id: string) =>
+    apiClient.post<IApiResponse<{ accessToken: string; hasOrganization: boolean }>>(API_ENDPOINTS.INVITATION.ACCEPT_FOR_USER(id)).then((r) => unwrapResponse(r.data)),
+
+  declineForUser: (id: string) =>
+    apiClient.post<IApiResponse<void>>(API_ENDPOINTS.INVITATION.DECLINE_FOR_USER(id)).then((r) => unwrapResponse(r.data)),
+
   myPending: () =>
     apiClient.get<IApiResponse<InvitationItem[]>>(API_ENDPOINTS.INVITATION.MY_PENDING).then((r) => {
       const unwrapped = unwrapResponse(r.data);

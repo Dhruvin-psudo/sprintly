@@ -4,16 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePendingInvitationsModal } from '../../../store/pending-invitations-modal-context';
 import { useMyPendingInvitations } from '../hooks/use-my-pending-invitations';
-import { useAcceptInvitation } from '../hooks/use-accept-invitation';
-import { useDeclineInvitation } from '../hooks/use-decline-invitation';
+import { useAcceptPendingInvitation } from '../hooks/use-accept-pending-invitation';
+import { useDeclinePendingInvitation } from '../hooks/use-decline-pending-invitation';
 import { getRoleBadgeStyle } from '../../../utils/role-style';
 import type { InvitationItem } from '@/api/services/invitation.api';
 
 export function PendingInvitationsDialog() {
   const { isOpen, setIsOpen, closeModal } = usePendingInvitationsModal();
   const { invitations, isLoading } = useMyPendingInvitations();
-  const acceptMutation = useAcceptInvitation();
-  const declineMutation = useDeclineInvitation();
+  const acceptMutation = useAcceptPendingInvitation();
+  const declineMutation = useDeclinePendingInvitation();
 
   const count = invitations.length;
   const titleText =
@@ -50,7 +50,6 @@ export function PendingInvitationsDialog() {
                     ? `${inv.invitedByUser.firstName} ${inv.invitedByUser.lastName || ''}`.trim()
                     : 'Team Admin';
                   const roleStyle = getRoleBadgeStyle(inv.role?.name);
-                  const tokenToUse = inv.token || inv.id;
 
                   return (
                     <div
@@ -80,7 +79,7 @@ export function PendingInvitationsDialog() {
                         <Button
                           size="sm"
                           className='text-white'
-                          onClick={() => acceptMutation.mutate({ token: tokenToUse })}
+                          onClick={() => acceptMutation.mutate(inv.id)}
                           disabled={acceptMutation.isPending || declineMutation.isPending}
                         >
                           Accept invite
@@ -88,7 +87,7 @@ export function PendingInvitationsDialog() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => declineMutation.mutate(tokenToUse)}
+                          onClick={() => declineMutation.mutate(inv.id)}
                           disabled={acceptMutation.isPending || declineMutation.isPending}
                         >
                           Decline

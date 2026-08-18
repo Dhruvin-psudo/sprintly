@@ -103,8 +103,31 @@ export class InvitationController {
   }
 
   @Get('my-pending')
+  @AllowWithoutOrg()
   async getMyPendingInvitations(@CurrentUser() caller: IAuthenticatedUser) {
     const items = await this.invitationService.getMyPendingInvitations(caller);
     return ApiResponse.ok(items, 'Pending invitations fetched successfully');
+  }
+
+  @AllowWithoutOrg()
+  @Post('accept/:id')
+  async acceptForUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() caller: IAuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...result } = await this.invitationService.acceptInvitationForUser(id, caller);
+    this.setRefreshTokenCookie(res, refreshToken);
+    return ApiResponse.ok(result, 'Invitation accepted successfully.');
+  }
+
+  @AllowWithoutOrg()
+  @Post('decline/:id')
+  async declineForUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() caller: IAuthenticatedUser,
+  ) {
+    const result = await this.invitationService.declineInvitationForUser(id, caller);
+    return ApiResponse.ok(null, result.message);
   }
 }

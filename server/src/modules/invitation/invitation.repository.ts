@@ -92,8 +92,10 @@ export class InvitationRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true, email: true, status: true, expiresAt: true, createdAt: true,
           role: { select: { id: true, name: true } },
+          organization: { select: { id: true, name: true, slug: true } },
           invitedByUser: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
       }),
@@ -148,12 +150,26 @@ export class InvitationRepository {
         status: InvitationStatus.PENDING,
         expiresAt: { gt: new Date() },
       },
-      include: {
+      select: {
+        id: true, email: true, status: true, expiresAt: true, createdAt: true,
         role: { select: { id: true, name: true } },
         organization: { select: { id: true, name: true, slug: true } },
         invitedByUser: { select: { id: true, firstName: true, lastName: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findPendingByIdForUser(id: string, email: string) {
+    return this.prisma.invitation.findFirst({
+      where: { id, email: email.toLowerCase().trim(), status: InvitationStatus.PENDING, expiresAt: { gt: new Date() } },
+      select: {
+        id: true, email: true, status: true, expiresAt: true, createdAt: true,
+        token: true, organizationId: true,
+        role: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, slug: true } },
+        invitedByUser: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
     });
   }
 
