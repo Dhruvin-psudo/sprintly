@@ -63,7 +63,7 @@ export function MembersListTable() {
     (m) => m.currentRole?.name?.toUpperCase() === "OWNER"
   );
 
-  let finalMembers = [...rawMembers];
+  const membersList = [...rawMembers];
   if (!hasOwner && currentOrg && !search) {
     const ownerUser: IUser = {
       id: currentOrg.owner?.id || currentOrg.createdBy || "owner-1",
@@ -77,10 +77,10 @@ export function MembersListTable() {
       updatedAt: currentOrg.updatedAt || new Date().toISOString(),
       currentRole: { id: "role-owner", name: "Owner", hierarchyLevel: 1 },
     };
-    finalMembers.unshift(ownerUser);
+    membersList.unshift(ownerUser);
   }
 
-  const members = finalMembers.sort((a, b) => {
+  const members = membersList.sort((a, b) => {
     const rankA = getRoleRank(a.currentRole?.name);
     const rankB = getRoleRank(b.currentRole?.name);
     if (rankA !== rankB) return rankA - rankB;

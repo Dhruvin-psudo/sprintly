@@ -6,6 +6,7 @@ import { clearAccessToken, getAccessToken, setAccessToken } from '@/api';
 import { getSessionContext, reconcileSession } from '@/api/services/auth.api';
 import { PRIVATE_ROUTES } from '@/router/constants/routes';
 import type { IOrganization } from '@/features/organization/types';
+import { ORGANIZATION_QUERY_KEYS } from '@/features/organization/constants/organization.constants';
 
 function tokenOrganizationId(token: string | null): string | null {
   if (!token) return null;
@@ -30,6 +31,7 @@ export function useRealtimeSessionSync() {
     reconcilingRef.current = true;
     try {
       const result = await reconcileSession();
+      queryClient.setQueryData(ORGANIZATION_QUERY_KEYS.all, result.organizations);
       clearAccessToken();
       setAccessToken(result.accessToken);
       setTokenVersion((version) => version + 1);
@@ -56,6 +58,12 @@ export function useRealtimeSessionSync() {
   }, [queryClient]);
 
   useEffect(() => {
+    const handleTokenChange = () => setTokenVersion((v) => v + 1);
+    window.addEventListener('auth:token-changed', handleTokenChange);
+    return () => window.removeEventListener('auth:token-changed', handleTokenChange);
+  }, []);
+
+  useEffect(() => {
     const token = getAccessToken();
     if (!token) return undefined;
     const socketUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
@@ -69,12 +77,28 @@ export function useRealtimeSessionSync() {
       queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.current });
     });
+
     socket.on('invitations.changed', () => {
       queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
     });
-    socket.on('membership.changed', () => {
-      void reconcile();
+
+    socket.on('membership.changed', (payload?: { organizationId?: string; reason?: string }) => {
+      const activeOrgId = tokenOrganizationId(getAccessToken());
+      const affectedOrgId = payload?.organizationId;
+
+      if (affectedOrgId && activeOrgId && affectedOrgId !== activeOrgId) {
+        // Non-active org removal: update org switcher list silently without triggering access dialog
+        queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.all });
+      } else {
+        // Active org removal/change: reconcile session and handle dialog or redirect
+        void reconcile();
+      }
     });
 
     return () => { socket.disconnect(); };
@@ -85,13 +109,18 @@ export function useRealtimeSessionSync() {
       if (!originalOrganizationRef.current || reconcilingRef.current) return;
       try {
         const context = await getSessionContext();
-        if (!context.hasOrganization || !context.contextMatches) void reconcile();
+        if (Array.isArray(context.organizations)) {
+          queryClient.setQueryData(ORGANIZATION_QUERY_KEYS.all, context.organizations);
+        }
+        if (!context.hasOrganization || !context.contextMatches) {
+          void reconcile();
+        }
       } catch {
         // Retry on the next four-second tick.
       }
     }, 4_000);
     return () => window.clearInterval(timer);
-  }, [reconcile]);
+  }, [queryClient, reconcile]);
 
   return { accessChanged, organizations, closeAccessDialog: () => setAccessChanged(false) };
 }

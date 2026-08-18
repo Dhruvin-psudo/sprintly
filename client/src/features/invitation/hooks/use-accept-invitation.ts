@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { invitationApi, type AcceptInvitationInput } from '@/api/services/invitation.api';
 import { setAccessToken } from '@/api';
+import { ORGANIZATION_QUERY_KEYS } from '@/features/organization/constants/organization.constants';
 
 export function useAcceptInvitation(options?: { onSuccess?: (orgName?: string) => void }) {
   const queryClient = useQueryClient();
@@ -11,7 +12,8 @@ export function useAcceptInvitation(options?: { onSuccess?: (orgName?: string) =
     onSuccess: (res) => {
       setAccessToken(res.accessToken);
       queryClient.clear();
-      queryClient.invalidateQueries({ queryKey: ['org'] });
+      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ORGANIZATION_QUERY_KEYS.current });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['workspace-members'] });

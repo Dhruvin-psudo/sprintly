@@ -6,6 +6,6 @@ export function useOrganizations() {
     return useQuery({
         queryKey: ORGANIZATION_QUERY_KEYS.all,
         queryFn: organizationApi.getAll,
-        staleTime: 5 * 60 * 100
+        staleTime: 5 * 60 * 1000,
     })
 }
