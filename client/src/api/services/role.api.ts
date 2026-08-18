@@ -25,8 +25,8 @@ export const roleApis = {
       }),
 
   updateMemberRole: (userId: string, roleId: string) =>
-    apiClient.patch<void>(API_ENDPOINTS.ROLE.MEMBER(userId), { roleId }).then((r) => r.data),
+    apiClient.patch<void>(API_ENDPOINTS.ROLE.ASSIGN, { userId, roleId }).then((r) => r.data),
 
   removeMember: (userId: string) =>
-    apiClient.delete<void>(API_ENDPOINTS.ROLE.MEMBER(userId)).then((r) => r.data),
+    apiClient.delete<void>(API_ENDPOINTS.ROLE.REMOVE_MEMBER, { data: { userId } }).then((r) => r.data),
 };

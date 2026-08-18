@@ -29,6 +29,7 @@ import { useCurrentOrganization } from "../../organization/hooks/use-current-org
 import { useUpdateMemberRole } from "../hooks/use-update-member-role";
 import { useRemoveOrgMember } from "../hooks/use-remove-org-member";
 import { getRoleBadgeStyle } from "../../../utils/role-style";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import type { IUser } from "@/features/auth/types";
 
 
@@ -54,6 +55,7 @@ export function MembersListTable() {
 
   const { data: membersResponse, isLoading, error, refetch } = useOrgMembers({ search });
   const { data: currentOrg } = useCurrentOrganization();
+  const { data: currentUser } = useCurrentUser();
   const { data: roles = [] } = useRoles();
 
   const rawMembers = membersResponse?.data || [];
@@ -143,7 +145,8 @@ export function MembersListTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
+                <TableHead>User Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -155,6 +158,7 @@ export function MembersListTable() {
                 const fullName = `${member.firstName} ${member.lastName || ""}`.trim();
                 const roleName = member.currentRole?.name || "Member";
                 const isOwner = roleName.toUpperCase() === "OWNER";
+                const isCurrentUser = member.id === currentUser?.id;
 
                 return (
                   <TableRow key={member.id}>
@@ -163,11 +167,18 @@ export function MembersListTable() {
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="text-sm font-medium leading-none">{fullName}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{member.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium leading-none">{fullName}</span>
+                          {isCurrentUser && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary border-primary/20 font-semibold">
+                              You
+                            </Badge>
+                          )}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {member.email}
                     </TableCell>
                     <TableCell>
                       {(() => {
@@ -183,7 +194,7 @@ export function MembersListTable() {
                       {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!isOwner && (
+                      {!isOwner && !isCurrentUser && (
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
