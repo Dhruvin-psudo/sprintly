@@ -5,12 +5,13 @@ export function useMyPendingInvitations() {
   const query = useQuery({
     queryKey: ['my-pending-invitations'],
     queryFn: () => invitationApi.myPending(),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
   });
 
-  const rawData = query.data;
-  const invitations: InvitationItem[] = Array.isArray(rawData)
-    ? rawData
-    : (rawData as any)?.data ?? [];
+  const invitations: InvitationItem[] = query.data ?? [];
 
   return { ...query, invitations };
 }

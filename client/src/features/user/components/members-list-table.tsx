@@ -25,13 +25,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrgMembers } from "../hooks/use-org-members";
 import { useRoles } from "../hooks/use-roles";
-import { useCurrentOrganization } from "../../organization/hooks/use-current-organization";
+import { useCurrentOrganization } from "@/features/organization/hooks/use-current-organization";
 import { useUpdateMemberRole } from "../hooks/use-update-member-role";
 import { useRemoveOrgMember } from "../hooks/use-remove-org-member";
-import { getRoleBadgeStyle } from "../../../utils/role-style";
+import { getRoleBadgeStyle } from "@/utils/role-style";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import type { IUser } from "@/features/auth/types";
-
-
 
 const ROLE_HIERARCHY_RANK: Record<string, number> = {
   OWNER: 1,
@@ -54,6 +53,7 @@ export function MembersListTable() {
 
   const { data: membersResponse, isLoading, error, refetch } = useOrgMembers({ search });
   const { data: currentOrg } = useCurrentOrganization();
+  const { data: currentUser } = useCurrentUser();
   const { data: roles = [] } = useRoles();
 
   const rawMembers = membersResponse?.data || [];
@@ -61,7 +61,7 @@ export function MembersListTable() {
     (m) => m.currentRole?.name?.toUpperCase() === "OWNER"
   );
 
-  let finalMembers = [...rawMembers];
+  const membersList = [...rawMembers];
   if (!hasOwner && currentOrg && !search) {
     const ownerUser: IUser = {
       id: currentOrg.owner?.id || currentOrg.createdBy || "owner-1",
@@ -71,14 +71,14 @@ export function MembersListTable() {
       status: "ACTIVE",
       lastLoginAt: null,
       lastActiveOrgId: currentOrg.id,
-      createdAt: currentOrg.createdAt || new Date().toISOString(),
-      updatedAt: currentOrg.updatedAt || new Date().toISOString(),
+      createdAt: currentOrg.createdAt,
+      updatedAt: currentOrg.updatedAt,
       currentRole: { id: "role-owner", name: "Owner", hierarchyLevel: 1 },
     };
-    finalMembers.unshift(ownerUser);
+    membersList.unshift(ownerUser);
   }
 
-  const members = finalMembers.sort((a, b) => {
+  const members = membersList.sort((a, b) => {
     const rankA = getRoleRank(a.currentRole?.name);
     const rankB = getRoleRank(b.currentRole?.name);
     if (rankA !== rankB) return rankA - rankB;
@@ -143,7 +143,8 @@ export function MembersListTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
+                <TableHead>User Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -155,6 +156,7 @@ export function MembersListTable() {
                 const fullName = `${member.firstName} ${member.lastName || ""}`.trim();
                 const roleName = member.currentRole?.name || "Member";
                 const isOwner = roleName.toUpperCase() === "OWNER";
+                const isCurrentUser = member.id === currentUser?.id;
 
                 return (
                   <TableRow key={member.id}>
@@ -163,11 +165,18 @@ export function MembersListTable() {
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="text-sm font-medium leading-none">{fullName}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{member.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium leading-none">{fullName}</span>
+                          {isCurrentUser && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary border-primary/20 font-semibold">
+                              You
+                            </Badge>
+                          )}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {member.email}
                     </TableCell>
                     <TableCell>
                       {(() => {
@@ -183,7 +192,7 @@ export function MembersListTable() {
                       {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!isOwner && (
+                      {!isOwner && !isCurrentUser && (
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
@@ -227,7 +236,7 @@ export function MembersListTable() {
       {/* Edit Role Dialog */}
       {editingUser && (
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-100">
             <DialogHeader>
               <DialogTitle>Change Role</DialogTitle>
               <DialogDescription>
@@ -287,7 +296,7 @@ export function MembersListTable() {
       {/* Remove Member Dialog */}
       {deletingUser && (
         <Dialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-100">
             <DialogHeader>
               <DialogTitle>Remove Member</DialogTitle>
               <DialogDescription>

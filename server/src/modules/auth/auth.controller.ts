@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Public } from "../../common/decorators/public.decorator";
 import { RegisterUserDto } from "./dto/register-user.dto";
@@ -8,6 +8,8 @@ import { ApiResponse } from "../../common/dto";
 import { loginUserDto } from "./dto/login-user.dto";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { REFRESH_TOKEN_COOKIE_NAME } from "../../common/constants";
+import { AllowWithoutOrg } from '../../common/decorators/allow-without-org.decorator';
+import type { IJwtUser } from '../../common/interfaces';
 
 @Controller('auth')
 export class AuthContoller {
@@ -81,5 +83,25 @@ export class AuthContoller {
         const result = await this.authService.refreshAccessToken(refreshJwt);
 
         return ApiResponse.ok(result, 'Token refreshed successfully');
+    }
+
+    @AllowWithoutOrg()
+    @Get('session/context')
+    async sessionContext(@CurrentUser() user: IJwtUser) {
+        return ApiResponse.ok(
+            await this.authService.getSessionContext(user),
+            'Session context fetched successfully',
+        );
+    }
+
+    @AllowWithoutOrg()
+    @Post('session/reconcile')
+    async reconcileSession(
+        @CurrentUser() user: IJwtUser,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const { refreshToken, ...result } = await this.authService.reconcileSession(user);
+        this.setRefreshTokenCookie(res, refreshToken);
+        return ApiResponse.ok(result, 'Session reconciled successfully');
     }
 }

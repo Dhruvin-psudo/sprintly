@@ -21,10 +21,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useInvitations } from "../../invitation/hooks/use-invitations";
-import { useResendInvitation } from "../../invitation/hooks/use-resend-invitation";
-import { useRevokeInvitation } from "../../invitation/hooks/use-revoke-invitation";
-import { getRoleBadgeStyle } from "../../../utils/role-style";
+import { useInvitations } from "@/features/invitation/hooks/use-invitations";
+import { useResendInvitation } from "@/features/invitation/hooks/use-resend-invitation";
+import { useRevokeInvitation } from "@/features/invitation/hooks/use-revoke-invitation";
+import { getRoleBadgeStyle } from "@/utils/role-style";
 
 function getStatusBadge(status: string) {
   switch (status.toUpperCase()) {
@@ -59,9 +59,7 @@ function getStatusBadge(status: string) {
 export function PendingInvitationsTable() {
   const [revokingInv, setRevokingInv] = useState<InvitationItem | null>(null);
 
-  const { data: invitationsData, isLoading, error, refetch } = useInvitations();
-
-  const invitations = Array.isArray(invitationsData) ? invitationsData : (invitationsData as unknown as { data: InvitationItem[] })?.data || [];
+  const { data: invitations = [], isLoading, error, refetch } = useInvitations();
 
   const resendMutation = useResendInvitation();
 
@@ -166,7 +164,7 @@ export function PendingInvitationsTable() {
       {/* Revoke Confirmation Dialog */}
       {revokingInv && (
         <Dialog open={!!revokingInv} onOpenChange={(open) => !open && setRevokingInv(null)}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-100">
             <DialogHeader>
               <DialogTitle>Revoke Invitation</DialogTitle>
               <DialogDescription>

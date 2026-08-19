@@ -3,6 +3,8 @@ export const API_ENDPOINTS = {
         REGISTER: '/auth/register',
         LOGIN: '/auth/login',
         LOGOUT: '/auth/logout',
+        SESSION_CONTEXT: '/auth/session/context',
+        SESSION_RECONCILE: '/auth/session/reconcile',
     },
     ORGANIZATION: {
         CREATE: '/organization',
@@ -22,7 +24,8 @@ export const API_ENDPOINTS = {
     },
     ROLE: {
         ALL: '/role',
-        MEMBER: (userId: string) => `/role/member/${userId}`,
+        ASSIGN: '/role/assign',
+        REMOVE_MEMBER: '/role/member',
     },
     INVITATION: {
         SEND: '/invitation/send',
@@ -32,6 +35,8 @@ export const API_ENDPOINTS = {
         REVOKE: (id: string) => `/invitation/${id}`,
         RESEND: (id: string) => `/invitation/resend/${id}`,
         DECLINE: '/invitation/decline',
+        ACCEPT_FOR_USER: (id: string) => `/invitation/accept/${id}`,
+        DECLINE_FOR_USER: (id: string) => `/invitation/decline/${id}`,
         MY_PENDING: '/invitation/my-pending',
     },
-} as const
+} as const

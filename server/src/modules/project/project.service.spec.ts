@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
+import { RoleRepository } from '../role/role.repository';
 import { DuplicateResourceException, ResourceNotFoundException, ValidationFailedException } from '../../common/errors';
 import { IAuthenticatedUser } from '../../common/interfaces';
 import { ProjectPhase, ProjectPriority } from '@prisma/client';
@@ -35,6 +36,13 @@ describe('ProjectService', () => {
             isCodeTakenInOrg: jest.fn(),
             validateOrgMembers: jest.fn(),
             validateProjectLead: jest.fn(),
+          },
+        },
+        {
+          provide: RoleRepository,
+          useValue: {
+            findMembershipWithRole: jest.fn(),
+            findRoleWithPermissions: jest.fn(),
           },
         },
       ],
@@ -99,7 +107,7 @@ describe('ProjectService', () => {
 
   describe('getProjectById', () => {
     it('should return project if found', async () => {
-      const mockProject = { id: 'proj-1', name: 'Sprintly V1' } as any;
+      const mockProject = { id: 'proj-1', name: 'Sprintly V1', leadId: 'user-123', members: [] } as any;
       projectRepository.findById.mockResolvedValue(mockProject);
 
       const result = await service.getProjectById('proj-1', mockUser);

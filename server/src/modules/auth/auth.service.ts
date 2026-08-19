@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { UserService } from "../user/user.service";
 import { loginUserDto } from "./dto/login-user.dto";
@@ -7,6 +7,8 @@ import * as bcrypt from "bcrypt";
 import { RoleService } from "../../modules/role/role.service";
 import { TokenService } from "../../modules/token/token.service";
 import { AuthInvalidCredentialsException } from "../../common/errors";
+import { OrganizationService } from '../organization/organization.service';
+import { IJwtUser } from '../../common/interfaces';
 
 export interface AuthTokensResponse {
     user: Omit<User, 'passwordHash'>;
@@ -26,7 +28,8 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly roleService: RoleService,
-        private readonly tokenService: TokenService
+        private readonly tokenService: TokenService,
+        @Optional() private readonly organizationService?: OrganizationService,
     ) { }
 
     async register(registerUserDto: RegisterUserDto): Promise<RegisterResponse> {
@@ -110,14 +113,55 @@ export class AuthService {
         const tokenRecord = await this.tokenService.verifyAndGetToken(refreshJwt, [TokenType.REFRESH])
 
         const metadata = tokenRecord.metadata as { organizationId?: string; roleId?: string } | null;
+        const membership = this.organizationService && metadata?.organizationId
+            ? await this.roleService.getMembershipWithRole(tokenRecord.userId, metadata.organizationId)
+            : undefined;
+        const organizationId = this.organizationService
+            ? membership?.organizationId ?? null
+            : metadata?.organizationId ?? null;
+        const roleId = this.organizationService
+            ? membership?.roleId ?? null
+            : metadata?.roleId ?? null;
 
         const accessToken = this.tokenService.generateAccessToken(
             tokenRecord.userId,
             tokenRecord.id,
-            metadata?.organizationId ?? null,
-            metadata?.roleId ?? null
+            organizationId,
+            roleId,
         );
 
         return { accessToken };
+    }
+
+    async getSessionContext(user: IJwtUser) {
+        const organizations = this.organizationService
+            ? await this.organizationService.getUserOrganizations(user.userId)
+            : [];
+        const membership = user.organizationId
+            ? await this.roleService.getMembershipWithRole(user.userId, user.organizationId)
+            : null;
+
+        return {
+            hasOrganization: !!membership,
+            contextMatches: !!membership && membership.roleId === user.roleId,
+            activeOrganizationId: membership?.organizationId ?? null,
+            activeRoleId: membership?.roleId ?? null,
+            organizations,
+        };
+    }
+
+    async reconcileSession(user: IJwtUser) {
+        const context = await this.getSessionContext(user);
+        const tokenContext = context.hasOrganization && context.activeOrganizationId && context.activeRoleId
+            ? { organizationId: context.activeOrganizationId, roleId: context.activeRoleId }
+            : undefined;
+        const tokens = await this.tokenService.issueAuthTokens(user.userId, tokenContext);
+
+        return {
+            ...tokens,
+            hasOrganization: !!tokenContext,
+            removedFromActiveOrganization: !!user.organizationId && !tokenContext,
+            organizations: context.organizations,
+        };
     }
 }

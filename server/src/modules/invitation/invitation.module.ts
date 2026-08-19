@@ -7,9 +7,10 @@ import { UserModule } from '../user/user.module';
 import { RoleModule } from '../role/role.module';
 import { TokenModule } from '../token/token.module';
 import { MailModule } from '../mail/mail.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, RoleModule, TokenModule, MailModule],
+  imports: [PrismaModule, UserModule, RoleModule, TokenModule, MailModule, RealtimeModule],
   controllers: [InvitationController],
   providers: [InvitationService, InvitationRepository],
   exports: [InvitationService, InvitationRepository],
