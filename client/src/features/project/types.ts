@@ -56,6 +56,17 @@ export interface ICreateProjectPayload {
   memberIds?: string[];
 }
 
+export interface IUpdateProjectPayload {
+  name?: string;
+  code?: string;
+  description?: string;
+  phase?: string;
+  priority?: string;
+  startDate?: string;
+  dueDate?: string;
+  leadId?: string;
+}
+
 export interface IProjectCardResponse {
   id: string;
   name: string;

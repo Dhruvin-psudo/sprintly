@@ -1,4 +1,4 @@
-import type { ICreateProjectPayload, IProjectQuery, IProjectResponse } from "@/features/project/types";
+import type { ICreateProjectPayload, IProjectQuery, IProjectResponse, IUpdateProjectPayload } from "@/features/project/types";
 import { apiClient } from "../client";
 import { API_ENDPOINTS } from "../constant/endpoints";
 import type { IApiResponse, IPaginatedResponse } from "../types";
@@ -30,6 +30,29 @@ export const projectApis = {
     apiClient
       .get<IApiResponse<IProjectResponse>>(
         API_ENDPOINTS.PROJECT.BY_ID(id)
+      )
+      .then((r) => r.data.data),
+
+  update: (id: string, data: IUpdateProjectPayload) =>
+    apiClient
+      .patch<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.UPDATE(id),
+        data
+      )
+      .then((r) => r.data.data),
+
+  removeMember: (projectId: string, userId: string) =>
+    apiClient
+      .delete<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.MEMBER_REMOVE(projectId, userId)
+      )
+      .then((r) => r.data.data),
+
+  addMembers: (projectId: string, userIds: string[]) =>
+    apiClient
+      .post<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.MEMBERS_ADD(projectId),
+        { userIds }
       )
       .then((r) => r.data.data),
 };

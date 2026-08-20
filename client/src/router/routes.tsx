@@ -36,6 +36,12 @@ const ProjectPage = lazy(() =>
   }))
 );
 
+const ProjectDetailPage = lazy(() =>
+  import("@/pages/project/project-detail-page").then((m) => ({
+    default: m.ProjectDetailPage,
+  }))
+);
+
 const TasksPage = lazy(() =>
   import("@/pages/task/tasks-page").then((m) => ({
     default: m.TasksPage,
@@ -93,6 +99,10 @@ export const router = createBrowserRouter([
           {
             path: PRIVATE_ROUTES.PROJECTS,
             element: <ProjectPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.PROJECT_DETAIL,
+            element: <ProjectDetailPage />,
           },
           {
             path: PRIVATE_ROUTES.TASKS,

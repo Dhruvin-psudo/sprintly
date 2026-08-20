@@ -39,7 +39,7 @@ export function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   return (
     <div
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+        "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground gap-1.5",
         className
       )}
       {...props}

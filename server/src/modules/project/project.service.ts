@@ -118,6 +118,13 @@ export class ProjectService {
             }
         }
 
+        const targetStartDate = dto.startDate !== undefined ? dto.startDate : existing.startDate;
+        const targetDueDate = dto.dueDate !== undefined ? dto.dueDate : existing.dueDate;
+
+        if (targetStartDate && targetDueDate && new Date(targetStartDate) > new Date(targetDueDate)) {
+            throw new ValidationFailedException({ dueDate: ['Project due date cannot be earlier than start date.'] });
+        }
+
         const updated = await this.projectRepository.update(id, user.organizationId, {
             name: dto.name,
             description: dto.description,

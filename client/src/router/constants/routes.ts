@@ -11,6 +11,7 @@ export const PRIVATE_ROUTES = {
     CREATE_ORGANIZATION: '/create-organization',
     WORKSPACES: '/workspaces',
     PROJECTS: '/projects',
+    PROJECT_DETAIL: '/projects/:id',
     SPRINTS: '/sprints',
     TASKS: '/tasks',
     MEMBERS: '/members',
