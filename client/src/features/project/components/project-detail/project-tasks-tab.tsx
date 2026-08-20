@@ -1,26 +1,88 @@
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getPriorityConfig } from "@/features/task/utils/priority-styles";
 import { getStatusConfig } from "@/features/task/utils/status-styles";
 import { getFullName, getInitials } from "@/utils/string";
+import { useUpdateTask } from "@/features/task/hooks/useUpdateTask";
+import { useDeleteTask } from "@/features/task/hooks/useDeleteTask";
+import { CompletionModal } from "@/features/task/components/completion-modal";
+import { DeleteTaskConfirmDialog } from "./delete-task-confirm-dialog";
 import type { Task, TaskPriority, TaskStatus } from "@/features/task/types";
-import { AlertTriangle, CheckCircle2, Clock, ListChecks, Plus, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Clock,
+  ListChecks,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+
+const updateTaskInlineSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
+  status: z.enum(["TODO", "IN_PROGRESS", "REVIEW", "DUE", "COMPLETED"]),
+  assigneeId: z.string().optional(),
+  dueDate: z.string().optional(),
+});
+
+type UpdateTaskInlineFormValues = z.infer<typeof updateTaskInlineSchema>;
 
 interface ProjectTasksTabProps {
+  projectId: string;
   tasks: Task[];
   onNewTaskClick: () => void;
 }
 
-export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps) {
+export function ProjectTasksTab({ projectId, tasks, onNewTaskClick }: ProjectTasksTabProps) {
+  const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = useDeleteTask();
+
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [dueFilter, setDueFilter] = useState<string>("all");
+
+  // State for modals
+  const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  // Editing state for inline task row
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    register,
+  } = useForm<UpdateTaskInlineFormValues>({
+    resolver: zodResolver(updateTaskInlineSchema),
+    defaultValues: {
+      title: "",
+      priority: "MEDIUM",
+      status: "TODO",
+      assigneeId: "unassigned",
+      dueDate: "",
+    },
+  });
+
+  const editPriority = watch("priority");
+  const editStatus = watch("status");
+  const editAssigneeId = watch("assigneeId") || "unassigned";
+  const editDueDate = watch("dueDate") || "";
 
   const assignees = useMemo(() => {
     const list: { id: string; name: string }[] = [];
@@ -60,6 +122,75 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
   const completed = tasks.filter((t) => t.status === "COMPLETED").length;
   const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
   const overdue = tasks.filter((t) => t.status !== "COMPLETED" && t.dueDate && t.dueDate < todayStr).length;
+
+  const handleStartEditRow = (task: Task) => {
+    setEditingTaskId(task.id);
+    reset({
+      title: task.title,
+      priority: task.priority,
+      status: task.status,
+      assigneeId: task.assigneeId || "unassigned",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
+    });
+  };
+
+  const handleCancelEditRow = () => {
+    setEditingTaskId(null);
+  };
+
+  const onSaveInlineTask = (data: UpdateTaskInlineFormValues) => {
+    if (!editingTaskId) return;
+
+    updateTaskMutation.mutate(
+      {
+        projectId,
+        id: editingTaskId,
+        data: {
+          title: data.title,
+          priority: data.priority,
+          status: data.status,
+          assigneeId: data.assigneeId === "unassigned" ? null : data.assigneeId,
+          dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingTaskId(null);
+        },
+      }
+    );
+  };
+
+  const handleConfirmComplete = () => {
+    if (!taskToComplete) return;
+    updateTaskMutation.mutate(
+      {
+        projectId,
+        id: taskToComplete.id,
+        data: {
+          status: "COMPLETED",
+          dueDate: new Date().toISOString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setTaskToComplete(null);
+        },
+      }
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    if (!taskToDelete) return;
+    deleteTaskMutation.mutate(
+      { projectId, id: taskToDelete.id },
+      {
+        onSuccess: () => {
+          setTaskToDelete(null);
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -106,7 +237,7 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
         </div>
       </div>
 
-      {/* Filters (No Type filter!) */}
+      {/* Filters */}
       <div className="rounded-2xl border border-border/60 bg-card p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="relative sm:col-span-2 lg:col-span-1">
@@ -174,7 +305,7 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
         </div>
       </div>
 
-      {/* Task List Table (No Type column, No Progress column!) */}
+      {/* Task List Table */}
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
         {filteredTasks.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
@@ -203,17 +334,33 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
                 const formattedDueDate = t.dueDate
                   ? new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit" })
                   : "No date";
+                const isCompleted = t.status === "COMPLETED";
 
                 return (
-                  <li key={t.id} className="p-4">
-                    <p className={`text-sm font-medium ${t.status === "COMPLETED" ? "text-muted-foreground line-through" : ""}`}>
-                      {t.title}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                  <li key={t.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-sm font-medium ${isCompleted ? "text-muted-foreground line-through" : ""}`}>
+                        {t.title}
+                      </p>
+                      {!isCompleted && (
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="size-7 text-emerald-600" onClick={() => setTaskToComplete(t)}>
+                            <CheckCircle2 className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-7" onClick={() => handleStartEditRow(t)}>
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => setTaskToDelete(t)}>
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
                       <Badge variant="outline" className={`text-xs ${priorityCfg.badgeClassName}`}>{priorityCfg.label}</Badge>
                       <Badge variant="outline" className={`text-xs ${statusCfg.badgeClassName}`}>{statusCfg.label}</Badge>
                     </div>
-                    <div className="mt-3 flex items-center justify-between text-xs min-w-0">
+                    <div className="flex items-center justify-between text-xs min-w-0 pt-1">
                       <div className="flex items-center gap-2">
                         <Avatar className="size-6">
                           <AvatarFallback className="bg-gradient-brand text-white text-[9px] font-bold">{initials}</AvatarFallback>
@@ -239,10 +386,12 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
                     <th scope="col" className="text-left p-3 font-medium">Status</th>
                     <th scope="col" className="text-left p-3 font-medium">Assignee</th>
                     <th scope="col" className="text-left p-3 font-medium whitespace-nowrap">Due date</th>
+                    <th scope="col" className="p-3 w-28 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTasks.map((t) => {
+                    const isEditingThisRow = editingTaskId === t.id;
                     const priorityCfg = getPriorityConfig(t.priority as TaskPriority);
                     const statusCfg = getStatusConfig(t.status as TaskStatus);
                     const assigneeName = t.assignee
@@ -256,11 +405,106 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
                     const formattedDueDate = t.dueDate
                       ? new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit" })
                       : "No date";
+                    const isCompleted = t.status === "COMPLETED";
+
+                    if (isEditingThisRow) {
+                      return (
+                        <tr key={t.id} className="border-t border-border/60 bg-muted/20">
+                          <td className="p-2">
+                            <Input
+                              {...register("title")}
+                              className="h-8 text-xs font-medium"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Select value={editPriority} onValueChange={(val) => { if (val) setValue("priority", val as TaskPriority, { shouldValidate: true }); }}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue>{editPriority}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2">
+                            <Select value={editStatus} onValueChange={(val) => { if (val) setValue("status", val as TaskStatus, { shouldValidate: true }); }}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue>{getStatusConfig(editStatus).label}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="TODO">To Do</SelectItem>
+                                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                                <SelectItem value="REVIEW">Review</SelectItem>
+                                <SelectItem value="DUE">Dues</SelectItem>
+                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2">
+                            <Select value={editAssigneeId} onValueChange={(val) => { if (val) setValue("assigneeId", val, { shouldValidate: true }); }}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue>
+                                  {editAssigneeId === "unassigned" ? "Unassigned" : assignees.find((a) => a.id === editAssigneeId)?.name || "Assignee"}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                {assignees.map((a) => (
+                                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2">
+                            {(() => {
+                              const taskCreatedDate = t.createdAt ? new Date(t.createdAt).toISOString().split("T")[0] : todayStr;
+                              const minDueDate = isOverdue ? todayStr : (taskCreatedDate > todayStr ? todayStr : taskCreatedDate);
+                              return (
+                                <Input
+                                  type="date"
+                                  value={editDueDate}
+                                  min={minDueDate}
+                                  onChange={(e) => setValue("dueDate", e.target.value, { shouldValidate: true })}
+                                  className="h-8 text-xs"
+                                />
+                              );
+                            })()}
+                          </td>
+                          <td className="p-2 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={handleSubmit(onSaveInlineTask)}
+                                disabled={updateTaskMutation.isPending}
+                                className="size-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 cursor-pointer"
+                              >
+                                <Check className="size-4" />
+                                <span className="sr-only">Save</span>
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={handleCancelEditRow}
+                                disabled={updateTaskMutation.isPending}
+                                className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                              >
+                                <X className="size-4" />
+                                <span className="sr-only">Cancel</span>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
 
                     return (
-                      <tr key={t.id} className="border-t border-border/60 hover:bg-muted/30 transition-colors">
+                      <tr key={t.id} className="group/row border-t border-border/60 hover:bg-muted/30 transition-colors">
                         <td className="p-3">
-                          <p className={`font-medium ${t.status === "COMPLETED" ? "text-muted-foreground line-through" : ""}`}>
+                          <p className={`font-medium ${isCompleted ? "text-muted-foreground line-through" : ""}`}>
                             {t.title}
                           </p>
                         </td>
@@ -281,6 +525,53 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
                         <td className={`p-3 whitespace-nowrap ${isOverdue ? "text-rose-500 dark:text-rose-400 font-medium" : "text-muted-foreground"}`}>
                           {formattedDueDate}{isOverdue && " · overdue"}
                         </td>
+                        <td className="p-3 text-right">
+                          {!isCompleted && (
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                              {/* Mark as Completed */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    onClick={() => setTaskToComplete(t)}
+                                    className="inline-flex items-center justify-center size-7 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="size-4" />
+                                    <span className="sr-only">Mark as completed</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">Mark as completed</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              {/* Edit Task */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    onClick={() => handleStartEditRow(t)}
+                                    className="inline-flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                                  >
+                                    <Pencil className="size-3.5" />
+                                    <span className="sr-only">Edit task</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">Edit task</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              {/* Delete Task */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    onClick={() => setTaskToDelete(t)}
+                                    className="inline-flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                    <span className="sr-only">Delete task</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">Delete task</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -290,6 +581,26 @@ export function ProjectTasksTab({ tasks, onNewTaskClick }: ProjectTasksTabProps)
           </>
         )}
       </div>
+
+      {/* Mark Completed Confirmation Modal */}
+      <CompletionModal
+        open={!!taskToComplete}
+        task={taskToComplete}
+        onClose={() => setTaskToComplete(null)}
+        onConfirm={handleConfirmComplete}
+        isPending={updateTaskMutation.isPending}
+      />
+
+      {/* Delete Task Confirmation Modal */}
+      <DeleteTaskConfirmDialog
+        open={!!taskToDelete}
+        onOpenChange={(open) => {
+          if (!open) setTaskToDelete(null);
+        }}
+        taskTitle={taskToDelete?.title || ""}
+        onConfirm={handleConfirmDelete}
+        isPending={deleteTaskMutation.isPending}
+      />
     </div>
   );
 }

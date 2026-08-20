@@ -91,11 +91,11 @@ export function ProjectDetailContainer() {
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-6">
-          <ProjectTasksTab tasks={tasks} onNewTaskClick={() => setIsCreateTaskOpen(true)} />
+          <ProjectTasksTab projectId={project.id} tasks={tasks} onNewTaskClick={() => setIsCreateTaskOpen(true)} />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <ProjectCalendarTab tasks={tasks} />
+          <ProjectCalendarTab projectId={project.id} tasks={tasks} />
         </TabsContent>
 
         <TabsContent value="members" className="mt-6">

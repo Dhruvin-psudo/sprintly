@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getPriorityConfig } from "@/features/task/utils/priority-styles";
 import { getStatusConfig } from "@/features/task/utils/status-styles";
+import { useUpdateTask } from "@/features/task/hooks/useUpdateTask";
 import type { Task, TaskPriority, TaskStatus } from "@/features/task/types";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
 
 interface ProjectCalendarTabProps {
+  projectId: string;
   tasks: Task[];
 }
 
@@ -25,8 +29,13 @@ function formatDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function ProjectCalendarTab({ tasks }: ProjectCalendarTabProps) {
+export function ProjectCalendarTab({ projectId, tasks }: ProjectCalendarTabProps) {
+  const updateTaskMutation = useUpdateTask();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Inline editing state for List view
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingDueDate, setEditingDueDate] = useState<string>("");
 
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const offset = (firstDay.getDay() + 6) % 7; // Monday = 0
@@ -46,6 +55,29 @@ export function ProjectCalendarTab({ tasks }: ProjectCalendarTabProps) {
     .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""))
     .slice(0, 8);
 
+  const handleStartEditDate = (t: Task) => {
+    setEditingTaskId(t.id);
+    setEditingDueDate(t.dueDate ? new Date(t.dueDate).toISOString().split("T")[0] : "");
+  };
+
+  const handleSaveDueDate = (taskId: string) => {
+    if (!editingDueDate) return;
+    updateTaskMutation.mutate(
+      {
+        projectId,
+        id: taskId,
+        data: {
+          dueDate: new Date(editingDueDate).toISOString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingTaskId(null);
+        },
+      }
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Calendar Header Controls */}
@@ -58,7 +90,7 @@ export function ProjectCalendarTab({ tasks }: ProjectCalendarTabProps) {
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
             <ChevronLeft className="size-4" aria-hidden />
           </Button>
-          <span className="text-sm font-medium min-w-32.5 text-center">{monthLabel}</span>
+          <span className="text-sm font-medium min-w-[130px] text-center">{monthLabel}</span>
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
             <ChevronRight className="size-4" aria-hidden />
           </Button>
@@ -162,6 +194,7 @@ export function ProjectCalendarTab({ tasks }: ProjectCalendarTabProps) {
           </div>
         </TabsContent>
 
+        {/* List View with Inline Due Date Edit */}
         <TabsContent value="list" className="mt-4">
           <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -181,11 +214,65 @@ export function ProjectCalendarTab({ tasks }: ProjectCalendarTabProps) {
                     .map((t) => {
                       const priorityCfg = getPriorityConfig(t.priority as TaskPriority);
                       const statusCfg = getStatusConfig(t.status as TaskStatus);
+                      const isEditingThisDate = editingTaskId === t.id;
+                      const isCompleted = t.status === "COMPLETED";
+                      const taskCreatedDate = t.createdAt ? new Date(t.createdAt).toISOString().split("T")[0] : todayKey;
+                      const isOverdueOrDue = !isCompleted && !!t.dueDate && t.dueDate < todayKey;
+                      const minDueDateStr = isOverdueOrDue ? todayKey : (taskCreatedDate > todayKey ? todayKey : taskCreatedDate);
+
                       return (
-                        <tr key={t.id} className="border-t border-border/60 hover:bg-muted/30 transition-colors">
+                        <tr key={t.id} className="group/listrow border-t border-border/60 hover:bg-muted/30 transition-colors">
                           <td className="p-3 font-medium">{t.title}</td>
                           <td className="p-3 text-muted-foreground whitespace-nowrap">
-                            {new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                            {isEditingThisDate ? (
+                              <div className="flex items-center gap-1.5">
+                                <Input
+                                  type="date"
+                                  min={minDueDateStr}
+                                  value={editingDueDate}
+                                  onChange={(e) => setEditingDueDate(e.target.value)}
+                                  className="h-7 text-xs w-36"
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleSaveDueDate(t.id)}
+                                  disabled={updateTaskMutation.isPending}
+                                  className="size-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 cursor-pointer"
+                                >
+                                  <Check className="size-3.5" />
+                                  <span className="sr-only">Save due date</span>
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setEditingTaskId(null)}
+                                  disabled={updateTaskMutation.isPending}
+                                  className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                                >
+                                  <X className="size-3.5" />
+                                  <span className="sr-only">Cancel</span>
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span>{new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}</span>
+                                {!isCompleted && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger
+                                        onClick={() => handleStartEditDate(t)}
+                                        className="inline-flex items-center justify-center size-6 rounded text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover/listrow:opacity-100 transition-opacity cursor-pointer"
+                                      >
+                                        <Pencil className="size-3" />
+                                        <span className="sr-only">Edit due date</span>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">Edit due date</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="p-3"><Badge variant="outline" className={`text-xs ${priorityCfg.badgeClassName}`}>{priorityCfg.label}</Badge></td>
                           <td className="p-3"><Badge variant="outline" className={`text-xs ${statusCfg.badgeClassName}`}>{statusCfg.label}</Badge></td>
