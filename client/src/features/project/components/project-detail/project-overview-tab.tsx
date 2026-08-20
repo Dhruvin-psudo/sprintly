@@ -62,10 +62,6 @@ export function ProjectOverviewTab({ project, tasks, isLoading }: ProjectOvervie
   const updateProjectMutation = useUpdateProject(project.id);
   const [isEditingInfo, setIsEditingInfo] = useState(false);
 
-  if (isLoading) {
-    return <ProjectOverviewSkeleton />;
-  }
-
   const {
     handleSubmit,
     setValue,
@@ -85,6 +81,10 @@ export function ProjectOverviewTab({ project, tasks, isLoading }: ProjectOvervie
   const editPriority = watch("priority");
   const editStartDate = watch("startDate");
   const editDueDate = watch("dueDate");
+
+  if (isLoading) {
+    return <ProjectOverviewSkeleton />;
+  }
 
   const handleStartDateChange = (val: string) => {
     setValue("startDate", val, { shouldValidate: true });

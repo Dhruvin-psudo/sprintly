@@ -51,10 +51,6 @@ export function ProjectTasksTab({ projectId, tasks, onNewTaskClick, isLoading }:
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
 
-  if (isLoading) {
-    return <ProjectTasksSkeleton />;
-  }
-
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -104,6 +100,10 @@ export function ProjectTasksTab({ projectId, tasks, onNewTaskClick, isLoading }:
     }
     return list;
   }, [tasks]);
+
+  if (isLoading) {
+    return <ProjectTasksSkeleton />;
+  }
 
   const resetFilters = () => {
     setQ("");

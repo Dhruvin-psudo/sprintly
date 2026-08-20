@@ -35,13 +35,13 @@ export function ProjectCalendarTab({ projectId, tasks, isLoading }: ProjectCalen
   const updateTaskMutation = useUpdateTask();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  if (isLoading) {
-    return <ProjectCalendarSkeleton />;
-  }
-
   // Inline editing state for List view
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingDueDate, setEditingDueDate] = useState<string>("");
+
+  if (isLoading) {
+    return <ProjectCalendarSkeleton />;
+  }
 
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const offset = (firstDay.getDay() + 6) % 7; // Monday = 0

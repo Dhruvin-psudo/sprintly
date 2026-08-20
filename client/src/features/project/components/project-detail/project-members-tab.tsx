@@ -28,12 +28,12 @@ export function ProjectMembersTab({ project, tasks, isLoading }: ProjectMembersT
   const removeMemberMutation = useRemoveProjectMember(project.id);
   const members = project.members || [];
 
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string; email: string } | null>(null);
+
   if (isLoading) {
     return <ProjectMembersSkeleton />;
   }
-
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string; email: string } | null>(null);
 
   const existingMemberUserIds = members.map((m) => m.user?.id).filter(Boolean) as string[];
 
