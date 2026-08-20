@@ -32,4 +32,19 @@ export const projectApis = {
         API_ENDPOINTS.PROJECT.BY_ID(id)
       )
       .then((r) => r.data.data),
+
+  removeMember: (projectId: string, userId: string) =>
+    apiClient
+      .delete<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.MEMBER_REMOVE(projectId, userId)
+      )
+      .then((r) => r.data.data),
+
+  addMembers: (projectId: string, userIds: string[]) =>
+    apiClient
+      .post<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.MEMBERS_ADD(projectId),
+        { userIds }
+      )
+      .then((r) => r.data.data),
 };
