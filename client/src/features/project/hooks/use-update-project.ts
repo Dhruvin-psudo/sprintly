@@ -9,12 +9,13 @@ export function useUpdateProject(projectId: string) {
   return useMutation({
     mutationFn: (data: IUpdateProjectPayload) => projectApis.update(projectId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project updated successfully");
     },
-    onError: (err: any) => {
-      const message = err?.response?.data?.message || err?.message || "Failed to update project";
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const message = error.response?.data?.message || error.message || "Failed to update project";
       toast.error(message);
     },
   });

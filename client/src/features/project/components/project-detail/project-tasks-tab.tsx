@@ -175,7 +175,6 @@ export function ProjectTasksTab({ projectId, tasks, onNewTaskClick, isLoading }:
         id: taskToComplete.id,
         data: {
           status: "COMPLETED",
-          dueDate: new Date().toISOString(),
         },
       },
       {
