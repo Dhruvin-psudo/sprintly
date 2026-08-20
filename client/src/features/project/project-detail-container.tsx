@@ -64,7 +64,7 @@ export function ProjectDetailContainer() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="mt-6">
-        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList className="w-max" aria-label="Project sections">
             {TABS.map((t) => (
               <TabsTrigger key={t} value={t.toLowerCase()}>
