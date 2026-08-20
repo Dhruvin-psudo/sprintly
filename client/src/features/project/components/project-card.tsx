@@ -11,7 +11,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const progressPercent = project.progress ?? 0;
 
   return (
-    <Link key={project.id} to="/app/projects/" className="rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors block">
+    <Link key={project.id} to={`/projects/${project.id}`} className="rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors block">
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground font-mono">{project.code}</p>
         <h3 className="font-semibold truncate mt-0.5">{project.name}</h3>
