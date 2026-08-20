@@ -1,4 +1,4 @@
-import type { ICreateProjectPayload, IProjectQuery, IProjectResponse } from "@/features/project/types";
+import type { ICreateProjectPayload, IProjectQuery, IProjectResponse, IUpdateProjectPayload } from "@/features/project/types";
 import { apiClient } from "../client";
 import { API_ENDPOINTS } from "../constant/endpoints";
 import type { IApiResponse, IPaginatedResponse } from "../types";
@@ -30,6 +30,14 @@ export const projectApis = {
     apiClient
       .get<IApiResponse<IProjectResponse>>(
         API_ENDPOINTS.PROJECT.BY_ID(id)
+      )
+      .then((r) => r.data.data),
+
+  update: (id: string, data: IUpdateProjectPayload) =>
+    apiClient
+      .patch<IApiResponse<IProjectResponse>>(
+        API_ENDPOINTS.PROJECT.UPDATE(id),
+        data
       )
       .then((r) => r.data.data),
 

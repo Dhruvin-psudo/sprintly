@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
         CREATE: '/project',
         ALL: '/project',
         BY_ID: (id: string) => `/project/${id}`,
+        UPDATE: (id: string) => `/project/${id}`,
         MEMBERS_ADD: (id: string) => `/project/${id}/members`,
         MEMBER_REMOVE: (id: string, userId: string) => `/project/${id}/members/${userId}`,
     },
