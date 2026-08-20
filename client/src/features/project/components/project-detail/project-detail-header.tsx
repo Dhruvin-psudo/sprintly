@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getProjectStatusConfig } from "../../utils/project-status-style";
-import type { IProjectResponse } from "../../types";
+import { getProjectStatusConfig } from "@/features/project/utils/project-status-style";
+import type { IProjectResponse } from "@/features/project/types";
 
 interface ProjectDetailHeaderProps {
   project: IProjectResponse;

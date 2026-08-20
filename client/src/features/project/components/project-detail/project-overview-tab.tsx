@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { getProjectStatusConfig } from "../../utils/project-status-style";
+import { getProjectStatusConfig } from "@/features/project/utils/project-status-style";
 import { getPriorityConfig } from "@/features/task/utils/priority-styles";
 import { getStatusConfig } from "@/features/task/utils/status-styles";
-import { useUpdateProject } from "../../hooks/use-update-project";
-import { PROJECT_ACTIVITY_FULL } from "../../project-detail-data";
-import type { IProjectResponse } from "../../types";
+import { useUpdateProject } from "@/features/project/hooks/use-update-project";
+import { PROJECT_ACTIVITY_FULL } from "@/features/project/project-detail-data";
+import { ProjectOverviewSkeleton } from "@/features/project/components/project-detail/project-detail-skeleton";
+import type { IProjectResponse } from "@/features/project/types";
 import type { Task } from "@/features/task/types";
 import {
   AlertTriangle,
@@ -54,11 +55,16 @@ type UpdateProjectInfoFormValues = z.infer<typeof updateProjectInfoSchema>;
 interface ProjectOverviewTabProps {
   project: IProjectResponse;
   tasks: Task[];
+  isLoading?: boolean;
 }
 
-export function ProjectOverviewTab({ project, tasks }: ProjectOverviewTabProps) {
+export function ProjectOverviewTab({ project, tasks, isLoading }: ProjectOverviewTabProps) {
   const updateProjectMutation = useUpdateProject(project.id);
   const [isEditingInfo, setIsEditingInfo] = useState(false);
+
+  if (isLoading) {
+    return <ProjectOverviewSkeleton />;
+  }
 
   const {
     handleSubmit,

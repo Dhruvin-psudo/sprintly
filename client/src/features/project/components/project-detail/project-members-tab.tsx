@@ -5,26 +5,32 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getFullName, getInitials } from "@/utils/string";
-import { calculateWorkload } from "../../utils/calculate-workload";
-import { useRemoveProjectMember } from "../../hooks/use-remove-project-member";
+import { calculateWorkload } from "@/features/project/utils/calculate-workload";
+import { useRemoveProjectMember } from "@/features/project/hooks/use-remove-project-member";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useCurrentOrganization } from "@/features/organization/hooks/use-current-organization";
-import { AddMemberDialog } from "./add-member-dialog";
-import { RemoveMemberConfirmDialog } from "./remove-member-confirm-dialog";
-import type { IProjectResponse } from "../../types";
+import { AddMemberDialog } from "@/features/project/components/project-detail/add-member-dialog";
+import { RemoveMemberConfirmDialog } from "@/features/project/components/project-detail/remove-member-confirm-dialog";
+import { ProjectMembersSkeleton } from "@/features/project/components/project-detail/project-detail-skeleton";
+import type { IProjectResponse } from "@/features/project/types";
 import type { Task } from "@/features/task/types";
 import { Trash2, UserPlus, Users } from "lucide-react";
 
 interface ProjectMembersTabProps {
   project: IProjectResponse;
   tasks: Task[];
+  isLoading?: boolean;
 }
 
-export function ProjectMembersTab({ project, tasks }: ProjectMembersTabProps) {
+export function ProjectMembersTab({ project, tasks, isLoading }: ProjectMembersTabProps) {
   const { data: currentUser } = useCurrentUser();
   const { data: currentOrg } = useCurrentOrganization();
   const removeMemberMutation = useRemoveProjectMember(project.id);
   const members = project.members || [];
+
+  if (isLoading) {
+    return <ProjectMembersSkeleton />;
+  }
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string; email: string } | null>(null);

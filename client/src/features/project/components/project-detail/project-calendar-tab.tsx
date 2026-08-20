@@ -7,12 +7,14 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/comp
 import { getPriorityConfig } from "@/features/task/utils/priority-styles";
 import { getStatusConfig } from "@/features/task/utils/status-styles";
 import { useUpdateTask } from "@/features/task/hooks/useUpdateTask";
+import { ProjectCalendarSkeleton } from "@/features/project/components/project-detail/project-detail-skeleton";
 import type { Task, TaskPriority, TaskStatus } from "@/features/task/types";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
 
 interface ProjectCalendarTabProps {
   projectId: string;
   tasks: Task[];
+  isLoading?: boolean;
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -29,9 +31,13 @@ function formatDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function ProjectCalendarTab({ projectId, tasks }: ProjectCalendarTabProps) {
+export function ProjectCalendarTab({ projectId, tasks, isLoading }: ProjectCalendarTabProps) {
   const updateTaskMutation = useUpdateTask();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  if (isLoading) {
+    return <ProjectCalendarSkeleton />;
+  }
 
   // Inline editing state for List view
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);

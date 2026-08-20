@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ACTIVITY_GROUPS, PROJECT_ACTIVITY_FULL } from "../../project-detail-data";
+import { ACTIVITY_GROUPS, PROJECT_ACTIVITY_FULL } from "@/features/project/project-detail-data";
+import { ProjectActivitySkeleton } from "@/features/project/components/project-detail/project-detail-skeleton";
 import { Activity } from "lucide-react";
 
 const ACTIVITY_FILTER_LABELS: Record<string, string> = {
@@ -12,8 +13,16 @@ const ACTIVITY_FILTER_LABELS: Record<string, string> = {
   edit: "Project edits",
 };
 
-export function ProjectActivityTab() {
+interface ProjectActivityTabProps {
+  isLoading?: boolean;
+}
+
+export function ProjectActivityTab({ isLoading }: ProjectActivityTabProps = {}) {
   const [filter, setFilter] = useState("all");
+
+  if (isLoading) {
+    return <ProjectActivitySkeleton />;
+  }
 
   const list = PROJECT_ACTIVITY_FULL.filter((a) => filter === "all" || a.kind === filter);
 

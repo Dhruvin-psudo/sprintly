@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { useWorkspaceMembers } from "../../hooks/use-workspace-members";
-import { useAddProjectMembers } from "../../hooks/use-add-project-members";
+import { useWorkspaceMembers } from "@/features/project/hooks/use-workspace-members";
+import { useAddProjectMembers } from "@/features/project/hooks/use-add-project-members";
 import { Check, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 

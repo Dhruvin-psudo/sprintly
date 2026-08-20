@@ -14,7 +14,8 @@ import { getFullName, getInitials } from "@/utils/string";
 import { useUpdateTask } from "@/features/task/hooks/useUpdateTask";
 import { useDeleteTask } from "@/features/task/hooks/useDeleteTask";
 import { CompletionModal } from "@/features/task/components/completion-modal";
-import { DeleteTaskConfirmDialog } from "./delete-task-confirm-dialog";
+import { DeleteTaskConfirmDialog } from "@/features/project/components/project-detail/delete-task-confirm-dialog";
+import { ProjectTasksSkeleton } from "@/features/project/components/project-detail/project-detail-skeleton";
 import type { Task, TaskPriority, TaskStatus } from "@/features/task/types";
 import {
   AlertTriangle,
@@ -43,11 +44,16 @@ interface ProjectTasksTabProps {
   projectId: string;
   tasks: Task[];
   onNewTaskClick: () => void;
+  isLoading?: boolean;
 }
 
-export function ProjectTasksTab({ projectId, tasks, onNewTaskClick }: ProjectTasksTabProps) {
+export function ProjectTasksTab({ projectId, tasks, onNewTaskClick, isLoading }: ProjectTasksTabProps) {
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
+
+  if (isLoading) {
+    return <ProjectTasksSkeleton />;
+  }
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
