@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +16,12 @@ import { useWorkspaceMembers } from "../../hooks/use-workspace-members";
 import { useAddProjectMembers } from "../../hooks/use-add-project-members";
 import { Check, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const addMembersSchema = z.object({
+  memberIds: z.array(z.string()).min(1, "Select at least one member to add"),
+});
+
+type AddMembersFormValues = z.infer<typeof addMembersSchema>;
 
 interface AddMemberDialogProps {
   open: boolean;
@@ -29,34 +38,45 @@ export function AddMemberDialog({
 }: AddMemberDialogProps) {
   const { allMembers, isLoading } = useWorkspaceMembers();
   const addMembersMutation = useAddProjectMembers(projectId);
-
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+  } = useForm<AddMembersFormValues>({
+    resolver: zodResolver(addMembersSchema),
+    defaultValues: {
+      memberIds: [],
+    },
+  });
+
+  const selectedIds = watch("memberIds") || [];
 
   // Available members to add (exclude members already in the project)
   const availableMembers = allMembers.filter((m) => !existingMemberUserIds.includes(m.id));
 
   const toggleSelection = (memberId: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
-    );
+    const nextIds = selectedIds.includes(memberId)
+      ? selectedIds.filter((id) => id !== memberId)
+      : [...selectedIds, memberId];
+    setValue("memberIds", nextIds, { shouldValidate: true });
   };
 
   const handleRemoveChip = (memberId: string) => {
-    setSelectedIds((prev) => prev.filter((id) => id !== memberId));
+    const nextIds = selectedIds.filter((id) => id !== memberId);
+    setValue("memberIds", nextIds, { shouldValidate: true });
   };
 
   const handleClose = () => {
-    setSelectedIds([]);
+    reset({ memberIds: [] });
     setIsDropdownOpen(false);
     onOpenChange(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedIds.length) return;
-
-    addMembersMutation.mutate(selectedIds, {
+  const onSubmit = (data: AddMembersFormValues) => {
+    addMembersMutation.mutate(data.memberIds, {
       onSuccess: () => {
         handleClose();
       },
@@ -75,7 +95,7 @@ export function AddMemberDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           {/* Member Selection Popover */}
           <div className="space-y-1.5 relative">
             <Popover open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>

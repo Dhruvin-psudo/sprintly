@@ -1,21 +1,55 @@
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getProjectStatusConfig } from "../../utils/project-status-style";
 import { getPriorityConfig } from "@/features/task/utils/priority-styles";
 import { getStatusConfig } from "@/features/task/utils/status-styles";
+import { useUpdateProject } from "../../hooks/use-update-project";
 import { PROJECT_ACTIVITY_FULL } from "../../project-detail-data";
 import type { IProjectResponse } from "../../types";
 import type { Task } from "@/features/task/types";
 import {
   AlertTriangle,
   CalendarDays,
+  Check,
   CheckCircle2,
   Clock,
   ListChecks,
+  Pencil,
   Users,
+  X,
 } from "lucide-react";
+
+const updateProjectInfoSchema = z
+  .object({
+    phase: z.string().min(1, "Status is required"),
+    priority: z.string().min(1, "Priority is required"),
+    startDate: z.string().optional(),
+    dueDate: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.dueDate) {
+        return new Date(data.dueDate) >= new Date(data.startDate);
+      }
+      return true;
+    },
+    {
+      message: "Due date cannot be earlier than start date",
+      path: ["dueDate"],
+    }
+  );
+
+type UpdateProjectInfoFormValues = z.infer<typeof updateProjectInfoSchema>;
 
 interface ProjectOverviewTabProps {
   project: IProjectResponse;
@@ -23,6 +57,73 @@ interface ProjectOverviewTabProps {
 }
 
 export function ProjectOverviewTab({ project, tasks }: ProjectOverviewTabProps) {
+  const updateProjectMutation = useUpdateProject(project.id);
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+  } = useForm<UpdateProjectInfoFormValues>({
+    resolver: zodResolver(updateProjectInfoSchema),
+    defaultValues: {
+      phase: project.phase || "ACTIVE",
+      priority: project.priority || "MEDIUM",
+      startDate: project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
+      dueDate: project.dueDate ? new Date(project.dueDate).toISOString().split("T")[0] : "",
+    },
+  });
+
+  const editPhase = watch("phase");
+  const editPriority = watch("priority");
+  const editStartDate = watch("startDate");
+  const editDueDate = watch("dueDate");
+
+  const handleStartDateChange = (val: string) => {
+    setValue("startDate", val, { shouldValidate: true });
+    if (editDueDate && val && val > editDueDate) {
+      setValue("dueDate", val, { shouldValidate: true });
+    }
+  };
+
+  const handleDueDateChange = (val: string) => {
+    setValue("dueDate", val, { shouldValidate: true });
+    if (editStartDate && val && val < editStartDate) {
+      setValue("startDate", val, { shouldValidate: true });
+    }
+  };
+
+  const handleStartEdit = () => {
+    reset({
+      phase: project.phase || "ACTIVE",
+      priority: project.priority || "MEDIUM",
+      startDate: project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
+      dueDate: project.dueDate ? new Date(project.dueDate).toISOString().split("T")[0] : "",
+    });
+    setIsEditingInfo(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingInfo(false);
+  };
+
+  const onSubmit = (data: UpdateProjectInfoFormValues) => {
+    updateProjectMutation.mutate(
+      {
+        phase: data.phase,
+        priority: data.priority,
+        startDate: data.startDate ? new Date(data.startDate).toISOString() : undefined,
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsEditingInfo(false);
+        },
+      }
+    );
+  };
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "COMPLETED").length;
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS").length;
@@ -74,19 +175,54 @@ export function ProjectOverviewTab({ project, tasks }: ProjectOverviewTabProps) 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3 items-stretch">
         {/* Column 1: Project Information */}
         <section className="rounded-2xl border border-border/60 bg-card p-5 flex flex-col" aria-labelledby="project-info-heading">
-          <h2 id="project-info-heading" className="text-lg font-semibold tracking-tight">Project information</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Key details and current progress.</p>
-          
-          <div className="mt-4 flex-1 space-y-4 text-sm">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <dt className="text-xs text-muted-foreground">Status</dt>
-              <dd className="mt-1">
-                <Badge variant="outline" className={statusConfig.statusColor}>
-                  {statusConfig.label}
-                </Badge>
-              </dd>
+              <h2 id="project-info-heading" className="text-lg font-semibold tracking-tight">Project information</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Key details and current progress.</p>
+            </div>
+            {!isEditingInfo && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    onClick={handleStartEdit}
+                    className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <Pencil className="size-4" />
+                    <span className="sr-only">Edit project information</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Edit information</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex-1 space-y-4 text-sm">
+            {/* Status / Phase */}
+            <div>
+              <dt className="text-xs text-muted-foreground mb-1">Status</dt>
+              {isEditingInfo ? (
+                <Select value={editPhase} onValueChange={(val) => { if (val) setValue("phase", val, { shouldValidate: true }); }}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue>{getProjectStatusConfig(editPhase).label}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PLANNING">Planning</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <dd>
+                  <Badge variant="outline" className={statusConfig.statusColor}>
+                    {statusConfig.label}
+                  </Badge>
+                </dd>
+              )}
             </div>
 
+            {/* Project Code (Read Only) */}
             <div>
               <dt className="text-xs text-muted-foreground">Project Code</dt>
               <dd className="mt-1 font-mono text-sm font-medium">
@@ -94,35 +230,97 @@ export function ProjectOverviewTab({ project, tasks }: ProjectOverviewTabProps) 
               </dd>
             </div>
 
+            {/* Priority */}
             <div>
-              <dt className="text-xs text-muted-foreground">Priority</dt>
-              <dd className="mt-1">
-                {project.priority ? (
-                  <Badge variant="outline">{project.priority}</Badge>
-                ) : (
-                  <span className="text-muted-foreground font-normal">—</span>
-                )}
-              </dd>
+              <dt className="text-xs text-muted-foreground mb-1">Priority</dt>
+              {isEditingInfo ? (
+                <Select value={editPriority} onValueChange={(val) => { if (val) setValue("priority", val, { shouldValidate: true }); }}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue>{editPriority}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">LOW</SelectItem>
+                    <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                    <SelectItem value="HIGH">HIGH</SelectItem>
+                    <SelectItem value="URGENT">URGENT</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <dd>
+                  {project.priority ? (
+                    <Badge variant="outline">{project.priority}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground font-normal">—</span>
+                  )}
+                </dd>
+              )}
             </div>
 
+            {/* Start Date */}
             <div>
-              <dt className="text-xs text-muted-foreground">Start date</dt>
-              <dd className="mt-1 text-sm font-medium">
-                {project.startDate
-                  ? new Date(project.startDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-                  : <span className="text-muted-foreground font-normal">—</span>}
-              </dd>
+              <dt className="text-xs text-muted-foreground mb-1">Start date</dt>
+              {isEditingInfo ? (
+                <Input
+                  type="date"
+                  value={editStartDate}
+                  max={editDueDate || undefined}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              ) : (
+                <dd className="text-sm font-medium">
+                  {project.startDate
+                    ? new Date(project.startDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                    : <span className="text-muted-foreground font-normal">—</span>}
+                </dd>
+              )}
             </div>
 
+            {/* Due Date */}
             <div>
-              <dt className="text-xs text-muted-foreground">Due date</dt>
-              <dd className="mt-1 text-sm font-medium">
-                {project.dueDate
-                  ? new Date(project.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-                  : <span className="text-muted-foreground font-normal">—</span>}
-              </dd>
+              <dt className="text-xs text-muted-foreground mb-1">Due date</dt>
+              {isEditingInfo ? (
+                <Input
+                  type="date"
+                  value={editDueDate}
+                  min={editStartDate || undefined}
+                  onChange={(e) => handleDueDateChange(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              ) : (
+                <dd className="text-sm font-medium">
+                  {project.dueDate
+                    ? new Date(project.dueDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                    : <span className="text-muted-foreground font-normal">—</span>}
+                </dd>
+              )}
             </div>
 
+            {/* Save / Cancel Buttons when Editing */}
+            {isEditingInfo && (
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={updateProjectMutation.isPending}
+                  className="h-8 text-xs flex-1"
+                >
+                  <X className="size-3.5 mr-1" /> Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={updateProjectMutation.isPending}
+                  className="h-8 text-xs flex-1 bg-gradient-brand text-white hover:opacity-90"
+                >
+                  <Check className="size-3.5 mr-1" /> {updateProjectMutation.isPending ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            )}
+
+            {/* Progress */}
             <div>
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
                 <span>Overall Progress</span>
@@ -130,7 +328,7 @@ export function ProjectOverviewTab({ project, tasks }: ProjectOverviewTabProps) 
               </div>
               <Progress value={completionPercent} className="h-1.5" />
             </div>
-          </div>
+          </form>
         </section>
 
         {/* Column 2: Upcoming Deadlines with Inline Scrolling */}
