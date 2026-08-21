@@ -1,17 +1,24 @@
-import { useDashboardData } from "./hooks/use-dashboard-data";
+import { useDashboardStats } from "./hooks/use-dashboard-stats";
+import { useProductivityData } from "./hooks/use-productivity-data";
+import { useActiveProjects } from "./hooks/use-active-projects";
+import { useTeamActivityMock } from "./hooks/use-team-activity-mock";
+
 import { DashboardHeader } from "./components/dashboard-header";
 import { DashboardStats } from "./components/dashboard-stats";
 import { ProductivityChart } from "./components/productivity-chart";
 import { UpcomingDeadlines } from "./components/upcoming-deadlines";
 import { ProjectCompletionChart } from "./components/project-completion-chart";
 import { TeamActivity } from "./components/team-activity";
-import { CalendarWidget } from "./components/calendar-widget";
 import { ActiveProjects } from "./components/active-projects";
-import { RecentFiles } from "./components/recent-files";
 import { DashboardSkeleton } from "./components/dashboard-skeleton";
 
 export function DashboardContainer() {
-  const { isLoading, ...data } = useDashboardData();
+  const { data: statsData, isLoading: isStatsLoading } = useDashboardStats();
+  const { data: productivityData, isLoading: isProductivityLoading } = useProductivityData();
+  const { data: projectsResponse, isLoading: isProjectsLoading } = useActiveProjects(3);
+  const { data: activityData } = useTeamActivityMock();
+
+  const isLoading = isStatsLoading || isProductivityLoading || isProjectsLoading;
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -20,23 +27,19 @@ export function DashboardContainer() {
   return (
     <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
       <DashboardHeader />
-      <DashboardStats data={data.stats} />
-      
+      <DashboardStats data={statsData?.stats} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProductivityChart data={data.productivity} />
-        <UpcomingDeadlines data={data.deadlines} />
+        <ProductivityChart data={productivityData || []} />
+        <UpcomingDeadlines data={statsData?.deadlines || []} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProjectCompletionChart data={data.completion} />
-        <TeamActivity data={data.activity} />
-        <CalendarWidget />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ActiveProjects data={data.activeProjects} />
-        <RecentFiles data={data.recentFiles} />
+        <ProjectCompletionChart data={statsData?.completion || []} />
+        <TeamActivity data={activityData} />
+        <ActiveProjects data={projectsResponse?.data ? [...projectsResponse.data] : []} />
       </div>
     </div>
   );
 }
+

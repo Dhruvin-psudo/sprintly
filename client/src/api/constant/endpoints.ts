@@ -42,4 +42,8 @@ export const API_ENDPOINTS = {
         DECLINE_FOR_USER: (id: string) => `/invitation/decline/${id}`,
         MY_PENDING: '/invitation/my-pending',
     },
+    DASHBOARD: {
+        PRODUCTIVITY: '/dashboard/productivity',
+        STATS: '/dashboard/stats',
+    },
 } as const
