@@ -9,6 +9,9 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+
+  app.setGlobalPrefix('api');
+  
   app.useLogger(app.get(PinoLogger));
 
   app.set('query parser', 'extended')
