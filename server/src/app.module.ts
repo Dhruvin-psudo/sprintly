@@ -17,6 +17,7 @@ import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { ProjectModule } from './modules/project/project.module';
 import { TaskModule } from './modules/task/task.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { InvitationModule } from './modules/invitation/invitation.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import type { Request } from 'express';
@@ -73,6 +74,7 @@ import { IJwtUser } from './common/interfaces';
         PermissionModule,
         ProjectModule,
         TaskModule,
+        DashboardModule,
         InvitationModule,
         RealtimeModule,
     ],
