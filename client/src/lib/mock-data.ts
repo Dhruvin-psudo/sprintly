@@ -1,0 +1,43 @@
+export const PLANS = [
+  {
+    name: "Starter",
+    price: 0,
+    period: "forever",
+    tagline: "For solo founders and small side projects.",
+    features: ["1 workspace", "Up to 3 projects", "Kanban board", "Basic reports", "Community support"],
+    cta: "Start free",
+    highlighted: false,
+  },
+  {
+    name: "Team",
+    price: 12,
+    period: "per user / month",
+    tagline: "For startups shipping every week.",
+    features: [
+      "Unlimited projects",
+      "Multiple workspaces",
+      "Custom roles",
+      "Advanced reports",
+      "Calendar & timeline",
+      "Priority support",
+    ],
+    cta: "Start 14-day trial",
+    highlighted: true,
+  },
+  {
+    name: "Business",
+    price: 28,
+    period: "per user / month",
+    tagline: "For agencies managing many clients.",
+    features: [
+      "Everything in Team",
+      "SSO / SAML",
+      "Guest access",
+      "Audit log",
+      "Client billing exports",
+      "Dedicated CSM",
+    ],
+    cta: "Talk to sales",
+    highlighted: false,
+  },
+];
