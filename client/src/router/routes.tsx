@@ -10,6 +10,22 @@ import { PublicRoute } from "./guards/public-route";
 import { ProtectedRoute } from "./guards/protected-route";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./constants/routes";
 
+const FeaturesPage = lazy(() =>
+  import("@/pages/landing-page/features-page").then((m) => ({ default: m.FeaturesPage }))
+);
+
+const PricingPage = lazy(() =>
+  import("@/pages/landing-page/pricing-page").then((m) => ({ default: m.PricingPage }))
+);
+
+const AboutPage = lazy(() =>
+  import("@/pages/landing-page/about-page").then((m) => ({ default: m.AboutPage }))
+);
+
+const ContactPage = lazy(() =>
+  import("@/pages/landing-page/contact-page").then((m) => ({ default: m.ContactPage }))
+);
+
 const LoginPage = lazy(() =>
   import("@/pages/auth/login-page").then((m) => ({ default: m.LoginPage }))
 );
@@ -130,10 +146,17 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  /* Public landing page */
+  /* Public landing layout & marketing routes */
   {
     path: "/",
     element: <LandingLayout />,
-    children: [{ index: true, element: <LandingPage /> }],
+    children: [
+      { index: true, element: <LandingPage /> },
+      { path: PUBLIC_ROUTES.FEATURES, element: <FeaturesPage /> },
+      { path: PUBLIC_ROUTES.PRICING, element: <PricingPage /> },
+      { path: PUBLIC_ROUTES.ABOUT, element: <AboutPage /> },
+      { path: PUBLIC_ROUTES.CONTACT, element: <ContactPage /> },
+    ],
   },
 ]);
+

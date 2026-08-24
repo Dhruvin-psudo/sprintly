@@ -2,6 +2,10 @@ export const PUBLIC_ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
     ACCEPT_INVITE: '/invite/accept',
+    FEATURES: '/features',
+    PRICING: '/pricing',
+    ABOUT: '/about',
+    CONTACT: '/contact'
 } as const;
 
 
