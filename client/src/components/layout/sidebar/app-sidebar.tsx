@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/shared/logo";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
 import {
@@ -29,7 +29,7 @@ export function AppSidebar() {
   return (
     <aside className="w-64 border-r border-border bg-sidebar text-sidebar-foreground flex-col hidden md:flex h-full shrink-0">
       <div className="p-6 h-16 flex items-center border-b border-border/80">
-        <Logo size="default" />
+        <BrandLogo />
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2 mt-2 space-y-0.5">
