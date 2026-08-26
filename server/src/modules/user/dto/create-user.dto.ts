@@ -1,4 +1,5 @@
 import { IsEmail, IsString, MaxLength, MinLength, IsOptional } from "class-validator";
+import { Transform } from "class-transformer";
 
 export class CreateUserDto {
     @IsString()
@@ -8,10 +9,10 @@ export class CreateUserDto {
 
     @IsOptional()
     @IsString()
-    @MinLength(2)
     @MaxLength(100)
     lastName?: string
 
+    @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
     @IsString()
     @IsEmail()
     @MaxLength(255)

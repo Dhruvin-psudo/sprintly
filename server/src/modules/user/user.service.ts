@@ -39,7 +39,7 @@ export class UserService {
 
         const user = await this.userRepository.create({
             firstName: createUserDto.firstName,
-            lastName: createUserDto.lastName ?? '',
+            lastName: createUserDto.lastName,
             email: createUserDto.email,
             passwordHash: passwordHash
         })

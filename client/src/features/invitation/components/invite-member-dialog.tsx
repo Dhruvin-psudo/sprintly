@@ -162,7 +162,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 
   // Validate single email string against format, duplicates, existing org members, and pending invitations
   const validateEmail = (emailStr: string): string | null => {
-    const trimmed = emailStr.trim();
+    const trimmed = emailStr.trim().toLowerCase();
     if (!trimmed) {
       return "Please enter an email address.";
     }
@@ -170,13 +170,13 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
     if (!emailRegex.test(trimmed)) {
       return "Please enter a valid email address.";
     }
-    if (existingMemberEmails.has(trimmed.toLowerCase())) {
+    if (existingMemberEmails.has(trimmed)) {
       return `${trimmed} is already a member of this organization.`;
     }
-    if (pendingInvitationEmails.has(trimmed.toLowerCase())) {
+    if (pendingInvitationEmails.has(trimmed)) {
       return `${trimmed} already has a pending invitation.`;
     }
-    if (stagedInvites.some((item) => item.email.toLowerCase() === trimmed.toLowerCase())) {
+    if (stagedInvites.some((item) => item.email.toLowerCase() === trimmed)) {
       return "This email has already been added to the invitation list.";
     }
     return null;
@@ -194,7 +194,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
     const roleObj = roles.find((r) => r.id === currentRoleId) || filteredRoles[0];
     const newInvite: StagedInvite = {
       id: crypto.randomUUID(),
-      email: currentEmail,
+      email: currentEmail.trim().toLowerCase(),
       roleId: roleObj.id,
       roleName: roleObj.name,
     };
@@ -232,7 +232,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
       const roleObj = roles.find((r) => r.id === currentRoleId) || filteredRoles[0];
       const autoStaged: StagedInvite = {
         id: crypto.randomUUID(),
-        email: currentEmail,
+        email: currentEmail.trim().toLowerCase(),
         roleId: roleObj.id,
         roleName: roleObj.name,
       };

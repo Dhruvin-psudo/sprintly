@@ -13,7 +13,10 @@ import { PUBLIC_ROUTES } from "@/router/constants/routes";
 /* ─── Schema (co-located per AGENTS.md) ─── */
 
 const loginSchema = z.object({
-  email: z.email("Please enter a valid email address"),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .transform((val) => val.toLowerCase().trim()),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
