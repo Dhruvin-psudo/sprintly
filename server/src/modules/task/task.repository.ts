@@ -250,11 +250,10 @@ export class TaskRepository {
             isDeleted: false,
             project: {
                 isDeleted: false,
-                members: {
-                    some: {
-                        userId,
-                    },
-                },
+                OR: [
+                    { leadId: userId },
+                    { members: { some: { userId } } },
+                ],
             },
             ...(status ? { status } : {}),
             ...(priority ? { priority } : {}),

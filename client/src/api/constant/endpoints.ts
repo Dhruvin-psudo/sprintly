@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
     USER: {
         ALL: '/user/all',
         ME: '/user',
+        CHANGE_PASSWORD: '/user/password',
     },
     ROLE: {
         ALL: '/role',

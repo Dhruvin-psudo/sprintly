@@ -19,7 +19,7 @@ export const PRIVATE_ROUTES = {
     SPRINTS: '/sprints',
     TASKS: '/tasks',
     MEMBERS: '/members',
-    REPORTS: '/reports',
+    CALENDAR: '/calendar',
     SETTINGS: '/settings',
 } as const;
 

@@ -76,6 +76,18 @@ const AcceptInvitePage = lazy(() =>
   }))
 );
 
+const CalendarPage = lazy(() =>
+  import("@/pages/calendar/calendar-page").then((m) => ({
+    default: m.CalendarPage,
+  }))
+);
+
+const SettingsPage = lazy(() =>
+  import("@/pages/settings/settings-page").then((m) => ({
+    default: m.SettingsPage,
+  }))
+);
+
 export const router = createBrowserRouter([
   /* Public invitation acceptance route */
   {
@@ -131,6 +143,14 @@ export const router = createBrowserRouter([
           {
             path: PRIVATE_ROUTES.MEMBERS,
             element: <MembersPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.CALENDAR,
+            element: <CalendarPage />,
+          },
+          {
+            path: PRIVATE_ROUTES.SETTINGS,
+            element: <SettingsPage />,
           },
         ],
       },
