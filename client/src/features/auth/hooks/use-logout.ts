@@ -13,9 +13,10 @@ export function useLogout() {
         mutationFn: () => logout(),
         onSettled: () => {
             clearAccessToken();
+            queryClient.cancelQueries();
             queryClient.clear();
-            navigate(PUBLIC_ROUTES.LOGIN);
-            toast.success('Logout successfully')
+            navigate(PUBLIC_ROUTES.LOGIN, { replace: true });
+            toast.success('Logged out successfully')
         }
     })
 }

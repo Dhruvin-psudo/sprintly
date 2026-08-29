@@ -19,11 +19,13 @@ const registerSchema = z.object({
     .max(100, "First name must be at most 100 characters"),
   lastName: z
     .string()
-    .min(2, "Last name must be at least 2 characters")
     .max(100, "Last name must be at most 100 characters")
     .optional()
     .or(z.literal("")),
-  email: z.email("Please enter a valid email address"),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .transform((val) => val.toLowerCase().trim()),
   passwordHash: z
     .string()
     .min(8, "Password must be at least 8 characters")

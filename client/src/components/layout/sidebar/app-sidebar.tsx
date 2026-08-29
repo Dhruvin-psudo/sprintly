@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/shared/logo";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
 import {
@@ -9,7 +9,6 @@ import {
   KanbanSquare,
   CalendarDays,
   Users,
-  LineChart,
   Settings,
 } from "lucide-react";
 import { PRIVATE_ROUTES } from "@/router/constants/routes";
@@ -18,9 +17,8 @@ const navItems = [
   { name: "Dashboard", to: PRIVATE_ROUTES.DASHBOARD, icon: LayoutDashboard, pathname: "/app/dashboard" },
   { name: "Projects", to: PRIVATE_ROUTES.PROJECTS, icon: FolderKanban, pathname: "/app/projects" },
   { name: "Board", to: PRIVATE_ROUTES.TASKS, icon: KanbanSquare, pathname: "/app/board" },
-  { name: "Calendar", to: PRIVATE_ROUTES.HOME + "calendar", icon: CalendarDays, pathname: "/app/calendar" },
+  { name: "Calendar", to: PRIVATE_ROUTES.CALENDAR, icon: CalendarDays, pathname: "/app/calendar" },
   { name: "Team", to: PRIVATE_ROUTES.MEMBERS, icon: Users, pathname: "/app/team" },
-  { name: "Reports", to: PRIVATE_ROUTES.REPORTS, icon: LineChart, pathname: "/app/reports" },
   { name: "Settings", to: PRIVATE_ROUTES.SETTINGS, icon: Settings, pathname: "/app/settings" },
 ];
 
@@ -29,13 +27,12 @@ export function AppSidebar() {
   return (
     <aside className="w-64 border-r border-border bg-sidebar text-sidebar-foreground flex-col hidden md:flex h-full shrink-0">
       <div className="p-6 h-16 flex items-center border-b border-border/80">
-        <Logo size="default" />
+        <BrandLogo />
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2 mt-2 space-y-0.5">
         {navItems.map((item) => {
-          const active =
-            item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
+          const active = pathname.startsWith(item.to);
           return (
             <Link
             key={item.to}

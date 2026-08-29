@@ -164,13 +164,16 @@ export function AddMemberDialog({
                       {m.initials}
                     </span>
                     <span>{m.name}</span>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => handleRemoveChip(m.id)}
-                      className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded-full hover:bg-muted"
+                      className="size-4 rounded-full text-muted-foreground hover:text-foreground p-0"
+                      aria-label={`Remove ${m.name}`}
                     >
                       <X className="size-3" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>

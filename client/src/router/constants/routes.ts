@@ -2,6 +2,10 @@ export const PUBLIC_ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
     ACCEPT_INVITE: '/invite/accept',
+    FEATURES: '/features',
+    PRICING: '/pricing',
+    ABOUT: '/about',
+    CONTACT: '/contact'
 } as const;
 
 
@@ -15,7 +19,7 @@ export const PRIVATE_ROUTES = {
     SPRINTS: '/sprints',
     TASKS: '/tasks',
     MEMBERS: '/members',
-    REPORTS: '/reports',
+    CALENDAR: '/calendar',
     SETTINGS: '/settings',
 } as const;
 

@@ -48,8 +48,15 @@ export function CreateOrganizationForm({
     },
   });
 
+  const handleFormSubmit = (data: CreateOrganizationFormValues) => {
+    onSubmit({
+      ...data,
+      email: data.email ? data.email.toLowerCase().trim() : "",
+    });
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
       {/* Organization Name */}
       <div className="space-y-2">
         <Label htmlFor="org-name">Organization Name</Label>

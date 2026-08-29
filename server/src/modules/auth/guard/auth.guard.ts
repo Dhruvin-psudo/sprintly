@@ -1,4 +1,4 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import { Injectable, ExecutionContext } from "@nestjs/common";
 import { Logger } from "@nestjs/common";
 import { TokenExpiredError } from "@nestjs/jwt"
 import { Reflector } from "@nestjs/core";
@@ -6,6 +6,7 @@ import { AuthGuard as PassportAuthGuard } from "@nestjs/passport";
 import type { Request } from 'express'
 import { IS_PUBLIC_KEY } from "../../../common/decorators/public.decorator";
 import { IJwtUser } from "../../../common/interfaces";
+import { AuthTokenInvalidException } from "../../../common/errors";
 
 @Injectable()
 export class AuthGuard extends PassportAuthGuard('jwt'){
@@ -36,15 +37,15 @@ export class AuthGuard extends PassportAuthGuard('jwt'){
         if(err) {
             if(err instanceof TokenExpiredError) {
                 this.logger.warn('Authentication failed: token expired')
-                throw new UnauthorizedException()
+                throw new AuthTokenInvalidException()
             }
             this.logger.warn('Authentication failed: invalid token')
-            throw new UnauthorizedException()
+            throw new AuthTokenInvalidException()
         }
 
         if(!user) {
             this.logger.warn('Authentication failed: no user resolved');
-            throw new UnauthorizedException();
+            throw new AuthTokenInvalidException();
         }
 
         return user

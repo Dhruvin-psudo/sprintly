@@ -9,6 +9,11 @@ export interface IListUsersParams {
     readonly search?: string;
 }
 
+export interface IChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+}
+
 export const getMe = () =>
     apiClient.get<IApiResponse<IUser>>(API_ENDPOINTS.USER.ME).then((r) => r.data.data);
   
@@ -25,3 +30,6 @@ export const getAllOrgMembers = (params? : IListUsersParams) : Promise<IPaginate
         total: r.data.meta.total,
         totalPages: r.data.meta.totalPages,
       }));
+
+export const changePassword = (data: IChangePasswordRequest) =>
+    apiClient.patch<IApiResponse<null>>(API_ENDPOINTS.USER.CHANGE_PASSWORD, data).then((r) => r.data);
