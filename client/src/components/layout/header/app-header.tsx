@@ -10,7 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut } from "lucide-react";
+import { LogOut, User, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { PRIVATE_ROUTES } from "@/router/constants/routes";
 import { WorkspaceSwitcher } from "./components/workspace-switcher";
 import { NotificationsPopover } from "./components/notifications-popover";
 import type { IUser } from "@/features/auth/types";
@@ -22,6 +24,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ user }: AppHeaderProps) {
+  const navigate = useNavigate();
   const logoutMutation = useLogout();
 
   const userInitials = getInitials(user?.firstName, user?.lastName) || "U";
@@ -41,10 +44,10 @@ export function AppHeader({ user }: AppHeaderProps) {
         <NotificationsPopover />
 
         <DropdownMenu>
-          <DropdownMenuTrigger >
-            <Button variant="ghost" className="gap-2 pl-2 pr-3">
+          <DropdownMenuTrigger>
+            <Button variant="ghost" className="gap-2 h-9 px-2 rounded-lg cursor-pointer">
               <Avatar className="size-7">
-                <AvatarFallback className="bg-gradient-brand text-white text-xs font-semibold">
+                <AvatarFallback className="bg-gradient-brand text-white text-xs font-bold">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
@@ -53,22 +56,35 @@ export function AppHeader({ user }: AppHeaderProps) {
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56 p-1.5 border border-border shadow-lg bg-popover rounded-xl">
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col">
-                  <p className="text-sm font-medium">{userFullName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user?.email || ""}
-                  </p>
+              <DropdownMenuLabel className="px-2.5 py-2 font-normal">
+                <div className="flex flex-col space-y-0.5">
+                  <p className="text-sm font-semibold leading-none text-foreground">{userFullName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email || ""}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => logoutMutation.mutate()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                <LogOut className="mr-2 size-4" />
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                onClick={() => navigate(`${PRIVATE_ROUTES.SETTINGS}?tab=profile`)}
+                className="gap-2.5 px-2.5 py-2 text-sm font-medium rounded-md cursor-pointer"
+              >
+                <User className="size-4 text-muted-foreground" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate(`${PRIVATE_ROUTES.SETTINGS}?tab=organization`)}
+                className="gap-2.5 px-2.5 py-2 text-sm font-medium rounded-md cursor-pointer"
+              >
+                <Building2 className="size-4 text-muted-foreground" />
+                <span>Organization</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                onClick={() => logoutMutation.mutate()}
+                className="gap-2.5 px-2.5 py-2 text-sm font-medium rounded-md text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+              >
+                <LogOut className="size-4 text-destructive" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
