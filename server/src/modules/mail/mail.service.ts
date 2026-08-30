@@ -20,6 +20,7 @@ export class MailService implements OnModuleInit {
   }
 
   private initTransporter() {
+    const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
     const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
     const host = this.configService.get<string>('SMTP_HOST');
     const port = Number(this.configService.get<number>('SMTP_PORT', 587));
@@ -28,7 +29,18 @@ export class MailService implements OnModuleInit {
     const secureConfig = this.configService.get<string>('SMTP_SECURE');
     const secure = secureConfig === 'true' || port === 465;
 
-    if (sendgridApiKey && sendgridApiKey.startsWith('SG.')) {
+    if (resendApiKey && resendApiKey.startsWith('re_')) {
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: 'resend',
+          pass: resendApiKey,
+        },
+      });
+      this.logger.log('Resend SMTP Transporter initialized using RESEND_API_KEY');
+    } else if (sendgridApiKey && sendgridApiKey.startsWith('SG.')) {
       this.transporter = nodemailer.createTransport({
         host: 'smtp.sendgrid.net',
         port: 587,
@@ -81,7 +93,7 @@ export class MailService implements OnModuleInit {
           );
         } else if (errorMsg.includes('from') || errorMsg.includes('Sender') || errorMsg.includes('550')) {
           this.logger.error(
-            '💡 HINT: Ensure your SENDGRID_FROM_EMAIL or SMTP_FROM matches the email address verified in SendGrid > Settings > Sender Authentication.',
+            '💡 HINT: Ensure your RESEND_FROM_EMAIL, SENDGRID_FROM_EMAIL or SMTP_FROM matches the email address verified in your email provider.',
           );
         }
       }
@@ -92,12 +104,15 @@ export class MailService implements OnModuleInit {
     const clientUrl = this.configService.get<string>('CLIENT_URL', 'http://localhost:5173');
     const acceptUrl = `${clientUrl}/invite/accept?token=${options.token}`;
 
+    const resendFrom = this.configService.get<string>('RESEND_FROM_EMAIL');
     const sendgridFrom = this.configService.get<string>('SENDGRID_FROM_EMAIL');
     const smtpFrom = this.configService.get<string>('SMTP_FROM');
     const smtpUser = this.configService.get<string>('SMTP_USER');
 
     let defaultFrom = '"Sprintly Team" <noreply@sprintly.com>';
-    if (sendgridFrom) {
+    if (resendFrom) {
+      defaultFrom = resendFrom.includes('<') ? resendFrom : `"Sprintly Team" <${resendFrom}>`;
+    } else if (sendgridFrom) {
       defaultFrom = sendgridFrom.includes('<') ? sendgridFrom : `"Sprintly Team" <${sendgridFrom}>`;
     } else if (smtpFrom) {
       defaultFrom = smtpFrom;

@@ -88,6 +88,12 @@ const SettingsPage = lazy(() =>
   }))
 );
 
+const NotFoundPage = lazy(() =>
+  import("@/pages/not-found/not-found-page").then((m) => ({
+    default: m.NotFoundPage,
+  }))
+);
+
 export const router = createBrowserRouter([
   /* Public invitation acceptance route */
   {
@@ -152,6 +158,10 @@ export const router = createBrowserRouter([
             path: PRIVATE_ROUTES.SETTINGS,
             element: <SettingsPage />,
           },
+          {
+            path: PUBLIC_ROUTES.NOT_FOUND,
+            element: <NotFoundPage />,
+          },
         ],
       },
 
@@ -177,6 +187,11 @@ export const router = createBrowserRouter([
       { path: PUBLIC_ROUTES.ABOUT, element: <AboutPage /> },
       { path: PUBLIC_ROUTES.CONTACT, element: <ContactPage /> },
     ],
+  },
+  /* Global catch-all 404 route */
+  {
+    path: PUBLIC_ROUTES.NOT_FOUND,
+    element: <NotFoundPage />,
   },
 ]);
 
