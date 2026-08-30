@@ -5,7 +5,8 @@ export const PUBLIC_ROUTES = {
     FEATURES: '/features',
     PRICING: '/pricing',
     ABOUT: '/about',
-    CONTACT: '/contact'
+    CONTACT: '/contact',
+    NOT_FOUND: '*',
 } as const;
 
 
