@@ -1,0 +1,46 @@
+# ==============================================================================
+# Sprintly Backend (.dockerignore)
+# Purpose: Exclude unnecessary files and directories from the Docker build context.
+# Benefits:
+#   1. Speeds up Docker builds (Docker doesn't send gigabytes of local files to the daemon)
+#   2. Prevents security leaks (prevents baking local secrets and .env files into image layers)
+#   3. Prevents host-OS node_modules from polluting the Linux container environment
+# ==============================================================================
+
+# Local dependencies (MUST be installed fresh inside container for Linux architecture)
+node_modules/
+.pnpm-store/
+
+# Local build artifacts (container will build its own clean production bundle)
+dist/
+build/
+*.tsbuildinfo
+
+# Environment and sensitive secrets (NEVER bake secrets into images!)
+.env
+.env.*
+!.env.example
+
+# Version control
+.git/
+.gitignore
+
+# Tests and code coverage (not needed in production runtime image)
+test/
+coverage/
+*.spec.ts
+*.test.ts
+
+# IDE, editor, and OS metadata
+.vscode/
+.idea/
+.fleet/
+.DS_Store
+Thumbs.db
+
+# Log files and runtime diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
