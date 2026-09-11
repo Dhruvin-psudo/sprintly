@@ -23,7 +23,7 @@ export class OrganizationController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      path: '/auth',
+      path: '/api/auth',
       maxAge:
         this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_DAYS', 7) *
         24 *
