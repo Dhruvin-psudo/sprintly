@@ -1,0 +1,164 @@
+# ==============================================================================
+# SPRINTLY DOCKER COMPOSE ORCHESTRATION FILE
+# ==============================================================================
+# Purpose:
+#   Orchestrates the entire Sprintly stack with a single command:
+#   1. db      - PostgreSQL 16 relational database with persistent storage volume
+#   2. redis   - Redis 7 in-memory store for Socket.IO multi-instance scaling & caching
+#   3. server  - NestJS 11 REST API with auto-migrations and healthchecks
+#   4. client  - React 19 + Tailwind CSS v4 SPA served via high-performance Nginx
+#
+# Usage:
+#   Start stack:    docker compose up -d --build
+#   Check logs:     docker compose logs -f
+#   Check health:   docker compose ps
+#   Stop stack:     docker compose down
+#   Wipe volumes:   docker compose down -v
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: sprintly-db
+    restart: unless-stopped
+    environment:
+      # Database credentials with fallback defaults (can be overridden in .env)
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sprintly}
+    ports:
+      # Expose port to the host so you can connect via DBeaver, pgAdmin, or TablePlus
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Named volume ensures data is persisted on host even when containers are recreated
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready tests whether the PostgreSQL server is accepting connections
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-sprintly}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sprintly-network
+
+  # ----------------------------------------------------------------------------
+  # 2. Redis Cache & Realtime WebSocket Adapter
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: sprintly-redis
+    restart: unless-stopped
+    ports:
+      # Expose Redis port to host for local debugging (optional)
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      # Persists Redis RDB snapshot data
+      - redis_data:/data
+    healthcheck:
+      # redis-cli ping returns PONG when Redis is ready
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - sprintly-network
+
+  # ----------------------------------------------------------------------------
+  # 3. Backend API Service (NestJS + Prisma)
+  # ----------------------------------------------------------------------------
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sprintly-server
+    restart: unless-stopped
+    depends_on:
+      # CRITICAL: Service dependencies with health gates!
+      # The server will NOT start until both PostgreSQL and Redis are fully initialized and healthy.
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Internal Docker DNS: 'db' resolves to the PostgreSQL container IP within sprintly-network
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-sprintly}?schema=public
+      # Internal Docker DNS: 'redis' resolves to the Redis container IP
+      REDIS_URL: redis://redis:6379
+      # CORS & Frontend Origins
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:5173,http://localhost:80,http://127.0.0.1:5173}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      # JWT & Security Configuration
+      JWT_SECRET: ${JWT_SECRET:-sprintly_production_jwt_super_secret_minimum_32_characters}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
+      REFRESH_TOKEN_EXPIRATION_DAYS: ${REFRESH_TOKEN_EXPIRATION_DAYS:-7}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Set to 'true' if you want custom extra seed scripts on container startup
+      RUN_SEEDS: ${RUN_SEEDS:-false}
+      # Optional email configuration (Resend / SMTP)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+    ports:
+      # Maps NestJS port 3000 to host port 3000
+      - "${SERVER_PORT:-3000}:3000"
+    healthcheck:
+      # Pings the public health check endpoint we implemented
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sprintly-network
+
+  # ----------------------------------------------------------------------------
+  # 4. Frontend Web Service (React 19 + Nginx)
+  # ----------------------------------------------------------------------------
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Injects the backend API base URL into the Vite build bundle
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+    container_name: sprintly-client
+    restart: unless-stopped
+    depends_on:
+      # Client starts after server is healthy
+      server:
+        condition: service_healthy
+    ports:
+      # Maps host port 5173 to Nginx port 80 (can be changed to 80:80 via .env)
+      - "${CLIENT_PORT:-5173}:80"
+    healthcheck:
+      # Pings the Nginx /healthz endpoint
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - sprintly-network
+
+# ------------------------------------------------------------------------------
+# Persistent Volumes Configuration
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ------------------------------------------------------------------------------
+# Isolated Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  sprintly-network:
+    driver: bridge

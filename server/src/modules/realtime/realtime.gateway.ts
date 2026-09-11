@@ -43,8 +43,13 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
       const publisher = createClient({ url: redisUrl });
       const subscriber = publisher.duplicate();
       await Promise.all([publisher.connect(), subscriber.connect()]);
-      server.adapter(createAdapter(publisher, subscriber));
-      this.logger.log('Realtime Redis adapter connected');
+      const rootServer = typeof (server as any).adapter === 'function' ? server : (server as any).server;
+      if (rootServer && typeof rootServer.adapter === 'function') {
+        rootServer.adapter(createAdapter(publisher, subscriber));
+        this.logger.log('Realtime Redis adapter connected');
+      } else {
+        this.logger.warn('Socket.IO root adapter method not found; fallback to default in-memory adapter');
+      }
     } catch (error) {
       this.logger.error(`Realtime Redis adapter unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
