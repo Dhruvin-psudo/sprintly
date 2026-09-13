@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { taskApi } from '@/api/services/task.api';
 import type { TaskQueryParams } from '../types';
 
-export function useMyTasks(params?: TaskQueryParams) {
+export function useMyTasks(params?: TaskQueryParams & { enabled?: boolean }) {
+    const { enabled = true, ...queryParams } = params ?? {};
     return useQuery({
-        queryKey: ['tasks', 'my-projects', params],
-        queryFn: () => taskApi.listMemberProjects(params),
+        queryKey: ['tasks', 'my-projects', queryParams],
+        queryFn: () => taskApi.listMemberProjects(queryParams),
+        enabled,
     });
 }
 

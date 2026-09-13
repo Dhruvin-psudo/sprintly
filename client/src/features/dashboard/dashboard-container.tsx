@@ -10,7 +10,13 @@ import { UpcomingDeadlines } from "./components/upcoming-deadlines";
 import { ProjectCompletionChart } from "./components/project-completion-chart";
 import { TeamActivity } from "./components/team-activity";
 import { ActiveProjects } from "./components/active-projects";
-import { DashboardSkeleton } from "./components/dashboard-skeleton";
+import {
+  DashboardStatsSkeleton,
+  ProductivityChartSkeleton,
+  UpcomingDeadlinesSkeleton,
+  ProjectCompletionSkeleton,
+  ActiveProjectsSkeleton,
+} from "./components/dashboard-skeleton";
 
 export function DashboardContainer() {
   const { data: statsData, isLoading: isStatsLoading } = useDashboardStats();
@@ -18,26 +24,44 @@ export function DashboardContainer() {
   const { data: projectsResponse, isLoading: isProjectsLoading } = useActiveProjects(3);
   const { data: activityData } = useTeamActivityMock();
 
-  const isLoading = isStatsLoading || isProductivityLoading || isProjectsLoading;
-
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
-
   return (
     <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
       <DashboardHeader />
-      <DashboardStats data={statsData?.stats} />
+
+      {isStatsLoading ? (
+        <DashboardStatsSkeleton />
+      ) : (
+        <DashboardStats data={statsData?.stats} />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProductivityChart data={productivityData || []} />
-        <UpcomingDeadlines data={statsData?.deadlines || []} />
+        {isProductivityLoading ? (
+          <ProductivityChartSkeleton />
+        ) : (
+          <ProductivityChart data={productivityData || []} />
+        )}
+
+        {isStatsLoading ? (
+          <UpcomingDeadlinesSkeleton />
+        ) : (
+          <UpcomingDeadlines data={statsData?.deadlines || []} />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProjectCompletionChart data={statsData?.completion || []} />
+        {isStatsLoading ? (
+          <ProjectCompletionSkeleton />
+        ) : (
+          <ProjectCompletionChart data={statsData?.completion || []} />
+        )}
+
         <TeamActivity data={activityData} />
-        <ActiveProjects data={projectsResponse?.data ? [...projectsResponse.data] : []} />
+
+        {isProjectsLoading ? (
+          <ActiveProjectsSkeleton />
+        ) : (
+          <ActiveProjects data={projectsResponse?.data ? [...projectsResponse.data] : []} />
+        )}
       </div>
     </div>
   );

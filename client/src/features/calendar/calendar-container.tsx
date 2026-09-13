@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyTasks } from "@/features/task/hooks/useMyTasks";
@@ -39,10 +39,39 @@ export function CalendarContainer() {
         sortOrder: "asc",
     });
 
-    const tasks: Task[] = tasksResponse?.data ? Array.from(tasksResponse.data) : [];
+    const tasks: Task[] = useMemo(
+        () => (tasksResponse?.data ? Array.from(tasksResponse.data) : []),
+        [tasksResponse]
+    );
 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+    const cells = useMemo(() => getCalendarCells(currentMonth), [currentMonth]);
+    const monthLabel = currentMonth.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+    });
+    const todayKey = formatDateKey(new Date());
+
+    const handleCellClick = (dateKey: string) => {
+        setSelectedDate((prev) => (prev === dateKey ? null : dateKey));
+    };
+
+    const selectedDateObj = selectedDate ? new Date(selectedDate + "T00:00:00") : null;
+    const selectedDateFormatted = selectedDateObj
+        ? selectedDateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : null;
+
+    const panelTasks = useMemo(() => {
+        if (selectedDate) {
+            return tasks.filter((t) => t.dueDate && getLocalDateKey(t.dueDate) === selectedDate);
+        }
+        return tasks
+            .filter((t) => t.status !== "COMPLETED" && t.dueDate)
+            .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""))
+            .slice(0, 10);
+    }, [tasks, selectedDate]);
 
     if (isLoading) {
         return <CalendarSkeleton />;
@@ -75,29 +104,6 @@ export function CalendarContainer() {
             </div>
         );
     }
-
-    const cells = getCalendarCells(currentMonth);
-    const monthLabel = currentMonth.toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-    });
-    const todayKey = formatDateKey(new Date());
-
-    const handleCellClick = (dateKey: string) => {
-        setSelectedDate((prev) => (prev === dateKey ? null : dateKey));
-    };
-
-    const selectedDateObj = selectedDate ? new Date(selectedDate + "T00:00:00") : null;
-    const selectedDateFormatted = selectedDateObj
-        ? selectedDateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-        : null;
-
-    const panelTasks = selectedDate
-        ? tasks.filter((t) => t.dueDate && getLocalDateKey(t.dueDate) === selectedDate)
-        : tasks
-            .filter((t) => t.status !== "COMPLETED" && t.dueDate)
-            .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""))
-            .slice(0, 10);
 
     return (
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
