@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 
 interface PendingInvitationsModalContextType {
   isOpen: boolean;
@@ -12,11 +13,16 @@ const PendingInvitationsModalContext = createContext<PendingInvitationsModalCont
 export function PendingInvitationsModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+  const openModal = useCallback(() => setIsOpen(true), []);
+  const closeModal = useCallback(() => setIsOpen(false), []);
+
+  const value = useMemo(
+    () => ({ isOpen, openModal, closeModal, setIsOpen }),
+    [isOpen, openModal, closeModal]
+  );
 
   return (
-    <PendingInvitationsModalContext.Provider value={{ isOpen, openModal, closeModal, setIsOpen }}>
+    <PendingInvitationsModalContext.Provider value={value}>
       {children}
     </PendingInvitationsModalContext.Provider>
   );

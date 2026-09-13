@@ -26,15 +26,18 @@ export function useTaskBoard() {
         !isAll ? selectedProjectId : undefined,
         { search: searchQuery || undefined }
     );
-    const myTasksQuery = useMyTasks({ search: searchQuery || undefined });
+    const myTasksQuery = useMyTasks({
+        search: searchQuery || undefined,
+        enabled: isAll,
+    });
 
     const activeQuery = !isAll ? projectTasksQuery : myTasksQuery;
-    const rawTasks = activeQuery.data?.data || [];
     const isTasksLoading = activeQuery.isLoading;
     const isLoading = isProjectsLoading || isTasksLoading;
 
     // Filter tasks if search is active
     const filteredTasks = useMemo(() => {
+        const rawTasks = activeQuery.data?.data || [];
         if (!searchQuery.trim()) return rawTasks;
         const q = searchQuery.toLowerCase();
         return rawTasks.filter(
@@ -42,7 +45,7 @@ export function useTaskBoard() {
                 t.title.toLowerCase().includes(q) ||
                 (t.description && t.description.toLowerCase().includes(q))
         );
-    }, [rawTasks, searchQuery]);
+    }, [activeQuery.data?.data, searchQuery]);
 
     const effectiveProjectId = !isAll
         ? selectedProjectId

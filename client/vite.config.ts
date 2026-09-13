@@ -11,4 +11,40 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return;
+
+          if (id.includes('recharts')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('socket.io-client')) {
+            return 'vendor-socket';
+          }
+          if (id.includes('@tanstack') || id.includes('axios')) {
+            return 'vendor-query';
+          }
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+            return 'vendor-forms';
+          }
+          if (id.includes('date-fns') || id.includes('react-day-picker')) {
+            return 'vendor-date';
+          }
+          if (id.includes('lucide-react') || id.includes('sonner')) {
+            return 'vendor-ui';
+          }
+          if (
+            id.includes('react-router') ||
+            id.includes('react-dom') ||
+            id.includes('/react/') ||
+            id.includes('\\react\\')
+          ) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
+  },
 })
