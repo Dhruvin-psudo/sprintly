@@ -1,14 +1,41 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter } from "react-router-dom";
-import { lazy } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
-import { LandingLayout } from "@/components/layout/landing-layout";
-import { AuthLayout } from "@/components/layout/auth-layout";
-import { AppLayout } from "@/components/layout/app-layout";
-import { LandingPage } from "@/pages/landing-page/landing-page";
 import { PublicRoute } from "./guards/public-route";
 import { ProtectedRoute } from "./guards/protected-route";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./constants/routes";
+
+function PageLoader() {
+  return (
+    <div className="flex-1 w-full h-full min-h-[300px] flex items-center justify-center p-8">
+      <div className="flex flex-col items-center gap-3">
+        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-muted-foreground animate-pulse">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+function withSuspense(element: ReactNode) {
+  return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
+}
+
+const LandingLayout = lazy(() =>
+  import("@/components/layout/landing-layout").then((m) => ({ default: m.LandingLayout }))
+);
+
+const AuthLayout = lazy(() =>
+  import("@/components/layout/auth-layout").then((m) => ({ default: m.AuthLayout }))
+);
+
+const AppLayout = lazy(() =>
+  import("@/components/layout/app-layout").then((m) => ({ default: m.AppLayout }))
+);
+
+const LandingPage = lazy(() =>
+  import("@/pages/landing-page/landing-page").then((m) => ({ default: m.LandingPage }))
+);
 
 const FeaturesPage = lazy(() =>
   import("@/pages/landing-page/features-page").then((m) => ({ default: m.FeaturesPage }))
@@ -98,22 +125,22 @@ export const router = createBrowserRouter([
   /* Public invitation acceptance route */
   {
     path: PUBLIC_ROUTES.ACCEPT_INVITE,
-    element: <AcceptInvitePage />,
+    element: withSuspense(<AcceptInvitePage />),
   },
   /* Public-only auth routes (redirects to dashboard if already logged in) */
   {
     element: <PublicRoute />,
     children: [
       {
-        element: <AuthLayout />,
+        element: withSuspense(<AuthLayout />),
         children: [
           {
             path: PUBLIC_ROUTES.REGISTER,
-            element: <RegisterPage />,
+            element: withSuspense(<RegisterPage />),
           },
           {
             path: PUBLIC_ROUTES.LOGIN,
-            element: <LoginPage />,
+            element: withSuspense(<LoginPage />),
           },
         ],
       },
@@ -124,53 +151,53 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        element: <AppLayout />,
+        element: withSuspense(<AppLayout />),
         children: [
           {
             path: PRIVATE_ROUTES.DASHBOARD,
-            element: <DashboardPage />,
+            element: withSuspense(<DashboardPage />),
           },
           {
             path: PRIVATE_ROUTES.PROJECTS,
-            element: <ProjectPage />,
+            element: withSuspense(<ProjectPage />),
           },
           {
             path: PRIVATE_ROUTES.PROJECT_DETAIL,
-            element: <ProjectDetailPage />,
+            element: withSuspense(<ProjectDetailPage />),
           },
           {
             path: PRIVATE_ROUTES.TASKS,
-            element: <TasksPage />,
+            element: withSuspense(<TasksPage />),
           },
           {
             path: PRIVATE_ROUTES.SPRINTS,
-            element: <TasksPage />,
+            element: withSuspense(<TasksPage />),
           },
           {
             path: PRIVATE_ROUTES.MEMBERS,
-            element: <MembersPage />,
+            element: withSuspense(<MembersPage />),
           },
           {
             path: PRIVATE_ROUTES.CALENDAR,
-            element: <CalendarPage />,
+            element: withSuspense(<CalendarPage />),
           },
           {
             path: PRIVATE_ROUTES.SETTINGS,
-            element: <SettingsPage />,
+            element: withSuspense(<SettingsPage />),
           },
           {
             path: PUBLIC_ROUTES.NOT_FOUND,
-            element: <NotFoundPage />,
+            element: withSuspense(<NotFoundPage />),
           },
         ],
       },
 
       {
-        element: <AuthLayout />,
+        element: withSuspense(<AuthLayout />),
         children: [
           {
             path: PRIVATE_ROUTES.CREATE_ORGANIZATION,
-            element: <CreateOrganizationPage />,
+            element: withSuspense(<CreateOrganizationPage />),
           },
         ],
       },
@@ -179,19 +206,19 @@ export const router = createBrowserRouter([
   /* Public landing layout & marketing routes */
   {
     path: "/",
-    element: <LandingLayout />,
+    element: withSuspense(<LandingLayout />),
     children: [
-      { index: true, element: <LandingPage /> },
-      { path: PUBLIC_ROUTES.FEATURES, element: <FeaturesPage /> },
-      { path: PUBLIC_ROUTES.PRICING, element: <PricingPage /> },
-      { path: PUBLIC_ROUTES.ABOUT, element: <AboutPage /> },
-      { path: PUBLIC_ROUTES.CONTACT, element: <ContactPage /> },
+      { index: true, element: withSuspense(<LandingPage />) },
+      { path: PUBLIC_ROUTES.FEATURES, element: withSuspense(<FeaturesPage />) },
+      { path: PUBLIC_ROUTES.PRICING, element: withSuspense(<PricingPage />) },
+      { path: PUBLIC_ROUTES.ABOUT, element: withSuspense(<AboutPage />) },
+      { path: PUBLIC_ROUTES.CONTACT, element: withSuspense(<ContactPage />) },
     ],
   },
   /* Global catch-all 404 route */
   {
     path: PUBLIC_ROUTES.NOT_FOUND,
-    element: <NotFoundPage />,
+    element: withSuspense(<NotFoundPage />),
   },
 ]);
 

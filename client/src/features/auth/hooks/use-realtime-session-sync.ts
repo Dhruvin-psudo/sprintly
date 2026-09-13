@@ -157,9 +157,9 @@ export function useRealtimeSessionSync() {
           void reconcile();
         }
       } catch {
-        // Retry on the next four-second tick.
+        // Retry on the next interval.
       }
-    }, 4_000);
+    }, 60_000);
     return () => window.clearInterval(timer);
   }, [queryClient, reconcile]);
 

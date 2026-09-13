@@ -5,10 +5,7 @@ export function useMyPendingInvitations() {
   const query = useQuery({
     queryKey: ['my-pending-invitations'],
     queryFn: () => invitationApi.myPending(),
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchOnMount: 'always',
+    staleTime: 5 * 60 * 1000,
   });
 
   const invitations: InvitationItem[] = query.data ?? [];
